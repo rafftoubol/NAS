@@ -28,6 +28,10 @@ func main() {
 		}
 
 		log.Printf(": %+v\n", *cfg)
+
+		if err := cfg.LoadConfigRepo(); err != nil {
+			log.Fatalf("Error: %s", err)
+		}
 	}
 
 }
