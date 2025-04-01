@@ -32,6 +32,8 @@ func main() {
 		if err := cfg.LoadConfigRepo(); err != nil {
 			log.Fatalf("Error: %s", err)
 		}
+
+		log.Printf(": %+v\n", *cfg)
 	}
 
 }

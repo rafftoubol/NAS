@@ -12,8 +12,8 @@ package config
 import (
 	"fmt"
 	"os"
-
-	// with go modules enabled (GO111MODULE=on or outside GOPATH)
+	"path"
+	"strings"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-playground/validator/v10"
@@ -21,8 +21,10 @@ import (
 )
 
 type Config struct {
-	ProjectPath string `mapstructure:"projectPath" validate:"required,url|dirpath"`
+	ProjectPath string `mapstructure:"projectPath" validate:"required,url|dir"`
 }
+
+var validate *validator.Validate
 
 func LoadConfig(config_path string) (*Config, error) {
 	// Simple reading of the config file
@@ -41,7 +43,8 @@ func LoadConfig(config_path string) (*Config, error) {
 		return nil, fmt.Errorf("unable to decode the struct of the config file: %w", err)
 	}
 
-	validate := validator.New(validator.WithRequiredStructEnabled())
+	validate = validator.New(validator.WithRequiredStructEnabled())
+
 	if err := validate.Struct(&config); err != nil {
 		return nil, fmt.Errorf("unable to validate the config file: %w", err)
 	}
@@ -52,16 +55,23 @@ func LoadConfig(config_path string) (*Config, error) {
 func (config *Config) LoadConfigRepo() error {
 	// Parse the config value to get the repo
 	// Pre : POINTER to a loaded and validated config struct
-	// Post : Return an error if appears or nil.
+	// Post : config.ProjectPath will contain the new path of the project. Return an error if appears.
 
-	fmt.Println("git clone", config.ProjectPath)
-	_, err := git.PlainClone("./tmp", false, &git.CloneOptions{
-		URL:      config.ProjectPath,
-		Progress: os.Stdout,
-	})
+	if err := validate.Var(config.ProjectPath, "required,dir"); err != nil {
+		// If it's remote repository => clone the remote repository inside ./tmp
+		// Else do nothing
 
-	if err != nil {
-		return fmt.Errorf("unable to clone the remote repository: %w", err)
+		fmt.Println("Cloning remote repository", config.ProjectPath)
+
+		destPath := path.Join("./tmp", strings.TrimSuffix(path.Base(config.ProjectPath), ".git")) // Get the name of the repository from the URL.
+		if _, err := git.PlainClone(destPath, false, &git.CloneOptions{
+			URL:      config.ProjectPath,
+			Progress: os.Stdout,
+		}); err != nil {
+			return fmt.Errorf("unable to clone the remote repository: %w", err)
+		}
+
+		config.ProjectPath = destPath
 	}
 
 	return nil
