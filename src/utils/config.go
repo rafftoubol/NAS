@@ -2,9 +2,9 @@
 This file contain the function to extract and parse the config file and
 the function to download the remote repository.
 
-TODO: - Expand Config Struct with other value.
-	  - Check and validate each value, this include also that some value are not mandatory. (e.g there is path of a project and not the url)
-	  - Function LoadConfigRepo.
+TODO: [ ] Expand Config Struct with other value.
+	  [x] Check and validate each value, this include also that some value are not mandatory. (e.g there is path of a project and not the url)
+	  [x] Function LoadConfigRepo.
 */
 
 package config
@@ -26,12 +26,12 @@ type Config struct {
 
 var validate *validator.Validate
 
-func LoadConfig(config_path string) (*Config, error) {
+func LoadConfig(configPath string) (*Config, error) {
 	// Simple reading of the config file
 	// Pre :  A STRING type containing the config file path
 	// Post : Return a POINTER type to a validate config struct and an error if appears.
 
-	viper.SetConfigFile(config_path)
+	viper.SetConfigFile(configPath)
 
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, fmt.Errorf("error reading the config file: %w", err)
