@@ -4,3 +4,4 @@
 *.toml
 
 tmp/
+.idea/
