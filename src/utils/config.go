@@ -7,7 +7,7 @@ TODO: [ ] Expand Config Struct with other value.
 	  [x] Function LoadConfigRepo.
 */
 
-package config
+package utils
 
 import (
 	"fmt"
