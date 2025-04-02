@@ -2,7 +2,7 @@
 // Returns either error or a pointer to fullpath, and the Logger
 // Captial used not camel case so the logger and the full path is in global namespace
 
-package config
+package utils
 
 import (
 	"fmt"

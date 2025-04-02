@@ -1,4 +1,4 @@
-package next
+package utils
 
 import (
 	"encoding/json"
@@ -56,9 +56,8 @@ func InitNext(projectPath string) (*Next, error) {
 		return nil, fmt.Errorf("error reading package.json: %w", err)
 	}
 
-	fmt.Println(next.Name)
-	if next.Dependencies["next"] != "" {
-		println(next.Dependencies["next"])
+	if next.Dependencies["next"] == "" {
+		return nil, fmt.Errorf("next.js not found")
 	}
 	return &next, nil
 }
