@@ -1,7 +1,0 @@
-
-# Config File Type
-*.yaml
-*.toml
-
-tmp/
-.idea/
