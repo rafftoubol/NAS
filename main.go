@@ -17,11 +17,11 @@ func main() {
     \|__| \|__|\|__|\|__|\_________\
                         \|_________|`)
 
-	config_path := flag.String("c", "", "configuration file path")
+	configPath := flag.String("c", "", "configuration file path")
 	flag.Parse()
 
-	if *config_path != "" {
-		cfg, err := config.LoadConfig(*config_path)
+	if *configPath != "" {
+		cfg, err := config.LoadConfig(*configPath)
 
 		if err != nil {
 			log.Fatalf("Error: %s", err)
