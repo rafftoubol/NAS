@@ -5,6 +5,7 @@ go 1.24.1
 require (
 	github.com/go-git/go-git/v5 v5.14.0
 	github.com/go-playground/validator/v10 v10.26.0
+	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.1
 )
 
@@ -23,6 +24,7 @@ require (
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
