@@ -21,7 +21,6 @@ import (
 )
 
 var NasConfig *Config
-var validate *validator.Validate
 
 type Config struct {
 	ProjectPath string `mapstructure:"projectPath" validate:"required,url|dir"`

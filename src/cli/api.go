@@ -47,7 +47,7 @@ func discoverAPIRoutes(root string) {
 		if err != nil {
 			return err
 		}
-
+		// TODO: Unhandled Error
 		routeAnalysis.AnalyzeAPIFile(path)
 		return nil
 	})
