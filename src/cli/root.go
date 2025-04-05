@@ -3,18 +3,18 @@ package cli
 import (
 	"fmt"
 	"github.com/spf13/cobra"
-	"log"
+	"os"
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "cli",
+	Use:   "nas",
 	Short: "",
 	Long:  "",
 }
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		log.Fatalf(err.Error())
+		os.Exit(1)
 	}
 }
 

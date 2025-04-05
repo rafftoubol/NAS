@@ -5,7 +5,6 @@ import (
 	config "attack-surface/src/utils"
 	"fmt"
 	"github.com/spf13/cobra"
-	"log"
 	"os"
 	"path/filepath"
 )
@@ -17,7 +16,8 @@ var apiCmd = &cobra.Command{
 	Short: "Discovers API routes in the Next.js project",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 1 {
-			log.Fatalf("Please provide the project file location")
+			fmt.Println("Missing project path argument. Please provide the project path as an argument.")
+			os.Exit(1)
 		}
 
 		config := config.Config{
@@ -26,11 +26,13 @@ var apiCmd = &cobra.Command{
 		}
 
 		if err := config.Validate(); err != nil {
-			log.Fatalf(err.Error())
+			fmt.Println("🛑", err.Error())
+			os.Exit(1)
 		}
 
 		if err := config.LoadConfigRepo(); err != nil {
-			log.Fatalf(err.Error())
+			fmt.Println("🛑", err.Error())
+			os.Exit(1)
 		}
 
 		discoverAPIRoutes(config.ProjectPath)

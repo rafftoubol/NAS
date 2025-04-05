@@ -2,28 +2,33 @@ package cli
 
 import (
 	"attack-surface/src/utils"
+	"fmt"
 	"github.com/spf13/cobra"
-	"log"
+	"os"
 )
 
 var configCmd = &cobra.Command{
 	Use:   "config [config_file_path]",
-	Short: "Load configuration from	 a JSON, TOML, YAML, HCL file",
+	Short: "Load configuration from	a JSON, TOML, YAML, HCL file",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 1 {
-			log.Fatalf("Please provide the config file path")
+			fmt.Println("Missing config file path argument. Please provide the config file path as an argument.")
+			os.Exit(1)
 		}
 
 		if err := utils.LoadConfig(args[0]); err != nil {
-			log.Fatalf("Error loading config: %v", err)
+			fmt.Println("🛑", err.Error())
+			os.Exit(1)
 		}
 
 		if err := utils.NasConfig.LoadConfigRepo(); err != nil {
-			log.Fatalf("Error loading repo %v:", err)
+			fmt.Println("🛑", err.Error())
+			os.Exit(1)
 		}
 
 		if _, err := utils.InitNext(utils.NasConfig.ProjectPath); err != nil {
-			log.Fatalf("Error: %s", err)
+			fmt.Println("🛑", err.Error())
+			os.Exit(1)
 		}
 
 	},

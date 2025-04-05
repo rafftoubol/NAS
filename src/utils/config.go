@@ -49,7 +49,7 @@ func LoadConfig(configPath string) error {
 	}
 
 	if err := config.Validate(); err != nil {
-		return fmt.Errorf("unable to validate the config file: %w", err)
+		return fmt.Errorf(err.Error())
 	}
 
 	NasConfig = &config
