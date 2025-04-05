@@ -22,6 +22,7 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initProject)
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
+	rootCmd.AddCommand(apiDiscoverCmd)
 }
 
 func initProject() {
