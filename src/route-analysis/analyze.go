@@ -7,6 +7,8 @@ import (
 	"regexp"
 )
 
+//TODO: Create a type struct with t
+
 // AnalyzeAPIFile reads the file and detects HTTP methods & vulnerabilities
 func AnalyzeAPIFile(path string) {
 	file, err := os.Open(path)

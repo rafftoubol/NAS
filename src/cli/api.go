@@ -3,15 +3,13 @@ package cli
 import (
 	routeAnalysis "attack-surface/src/route-analysis"
 	"fmt"
+	"github.com/spf13/cobra"
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
-
-	"github.com/spf13/cobra"
 )
 
-var apiDiscoverCmd = &cobra.Command{
+var apiCmd = &cobra.Command{
 	Use:   "api",
 	Short: "Discovers API routes in the Next.js project",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -31,10 +29,7 @@ func discoverAPIRoutes(root string) {
 		}
 
 		// Identify API route files specific to next.js projects old and new
-		if !info.IsDir() && (strings.Contains(path, "/pages/api/") || strings.Contains(path, "/app/api/")) {
-			fmt.Println("🟢 Found API route:", path)
-			routeAnalysis.AnalyzeAPIFile(path)
-		}
+		routeAnalysis.AnalyzeAPIFile(path)
 		return nil
 	})
 
@@ -44,5 +39,5 @@ func discoverAPIRoutes(root string) {
 }
 
 func init() {
-	rootCmd.AddCommand(apiDiscoverCmd)
+	rootCmd.AddCommand(apiCmd)
 }
