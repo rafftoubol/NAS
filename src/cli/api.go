@@ -2,6 +2,7 @@ package cli
 
 import (
 	routeAnalysis "attack-surface/src/route-analysis"
+	config "attack-surface/src/utils"
 	"fmt"
 	"github.com/spf13/cobra"
 	"log"
@@ -17,6 +18,10 @@ var apiCmd = &cobra.Command{
 			log.Fatalf("Please provide the path")
 		}
 		discoverAPIRoutes(args[0])
+
+		if !config.IsLoaded() {
+			log.Fatalf("Please provide the path2")
+		}
 	},
 }
 

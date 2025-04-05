@@ -9,25 +9,23 @@ import (
 
 var configCmd = &cobra.Command{
 	Use:   "config [path_to_config]",
-	Short: "",
-	Long:  "",
+	Short: "Load configuration from a JSON, TOML, YAML, HCL file",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 1 {
 			log.Fatalf("Please provide the config file path")
 		}
 
 		configPath := args[0]
-
-		config, err := utils.LoadConfig(configPath)
-		if err != nil {
+		fmt.Println("Loading config from:", configPath)
+		if err := utils.LoadConfig(configPath); err != nil {
 			log.Fatalf("Error loading config: %v", err)
 		}
 
-		if err := config.LoadConfigRepo(); err != nil {
+		if err := utils.NasConfig.LoadConfigRepo(); err != nil {
 			log.Fatalf("Error loading repo %v:", err)
 		}
 
-		next, err := utils.InitNext(config.ProjectPath)
+		next, err := utils.InitNext(utils.NasConfig.ProjectPath)
 		if err != nil {
 			log.Fatalf("Error: %s", err)
 		}
