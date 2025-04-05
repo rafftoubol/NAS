@@ -24,14 +24,13 @@ func SetupLog(logPath string, logName string) (*log.Logger, error) {
 	// Create the log directory if it doesn't exist
 	err := os.MkdirAll(logPath, os.ModePerm)
 	if err != nil {
-		fmt.Println("Error creating log directory:", err)
-		return nil, err
+
+		return nil, fmt.Errorf("error creating log directory: %w", err)
 	}
 	// Create the log file
 	logFile, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		fmt.Println("Error creating log file:", err)
-		return nil, err
+		return nil, fmt.Errorf("error creating log file: %v", err)
 	}
 
 	// Create a new logger

@@ -10,17 +10,14 @@ import (
 //TODO: Create a type struct with t
 
 // AnalyzeAPIFile reads the file and detects HTTP methods & vulnerabilities
-func AnalyzeAPIFile(path string) {
+func AnalyzeAPIFile(path string) error {
 	file, err := os.Open(path)
 	if err != nil {
-		fmt.Println("❌ Error reading file:", err)
-		return
+		return fmt.Errorf("❌ Error reading file: %v", err)
 	}
 	defer func(file *os.File) {
-		err := file.Close()
-		if err != nil {
-			fmt.Println("❌ Error reading file:", err)
-			return
+		if err := file.Close(); err != nil {
+			fmt.Printf("❌ Error closing file: %v", err)
 		}
 	}(file)
 
@@ -64,6 +61,7 @@ func AnalyzeAPIFile(path string) {
 	} else {
 		fmt.Println("   ✅ No vulnerabilities detected")
 	}
+	return nil
 }
 
 // keys extracts keys from a map
