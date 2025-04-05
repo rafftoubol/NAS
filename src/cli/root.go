@@ -3,7 +3,7 @@ package cli
 import (
 	"fmt"
 	"github.com/spf13/cobra"
-	"os"
+	"log"
 )
 
 var rootCmd = &cobra.Command{
@@ -14,15 +14,15 @@ var rootCmd = &cobra.Command{
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatalf(err.Error())
 	}
 }
+
+var cfgFile string
 
 func init() {
 	cobra.OnInitialize(initProject)
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
-	rootCmd.AddCommand(apiDiscoverCmd)
 }
 
 func initProject() {
@@ -36,5 +36,4 @@ func initProject() {
                         \|_________|` + "\033[0m")
 
 	// TODO : Insert here logic for refresh cache
-
 }

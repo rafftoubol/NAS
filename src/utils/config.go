@@ -20,13 +20,15 @@ import (
 	"github.com/spf13/viper"
 )
 
-type Config struct {
-	ProjectPath string `mapstructure:"projectPath" validate:"required,url|dir"`
-}
-
+var NasConfig *Config
 var validate *validator.Validate
 
-func LoadConfig(configPath string) (*Config, error) {
+type Config struct {
+	ProjectPath string `mapstructure:"projectPath" validate:"required,url|dir"`
+	OutputPath  string `mapstructure:"outputPath" validate:"omitempty,dir"`
+}
+
+func LoadConfig(configPath string) error {
 	// Simple reading of the config file
 	// Pre :  A STRING type containing the config file path
 	// Post : Return a POINTER type to a validate config struct and an error if appears.
@@ -34,22 +36,23 @@ func LoadConfig(configPath string) (*Config, error) {
 	viper.SetConfigFile(configPath)
 
 	if err := viper.ReadInConfig(); err != nil {
-		return nil, fmt.Errorf("error reading the config file: %w", err)
+		return fmt.Errorf("error reading the config file: %w", err)
 	}
 
 	var config Config
 
 	if err := viper.Unmarshal(&config); err != nil {
-		return nil, fmt.Errorf("unable to decode the struct of the config file: %w", err)
+		return fmt.Errorf("unable to decode the struct of the config file: %w", err)
 	}
 
 	validate = validator.New(validator.WithRequiredStructEnabled())
 
 	if err := validate.Struct(&config); err != nil {
-		return nil, fmt.Errorf("unable to validate the config file: %w", err)
+		return fmt.Errorf("unable to validate the config file: %w", err)
 	}
 
-	return &config, nil
+	NasConfig = &config
+	return nil
 }
 
 func (config *Config) LoadConfigRepo() error {
@@ -75,4 +78,8 @@ func (config *Config) LoadConfigRepo() error {
 	}
 
 	return nil
+}
+
+func IsLoaded() bool {
+	return NasConfig != nil
 }
