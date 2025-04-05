@@ -12,7 +12,7 @@ import (
 )
 
 var apiDiscoverCmd = &cobra.Command{
-	Use:   "routes-surface",
+	Use:   "api",
 	Short: "Discovers API routes in the Next.js project",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 1 {
