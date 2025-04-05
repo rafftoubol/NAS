@@ -10,18 +10,34 @@ import (
 	"path/filepath"
 )
 
+var outputPath string
+
 var apiCmd = &cobra.Command{
 	Use:   "api",
 	Short: "Discovers API routes in the Next.js project",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 1 {
-			log.Fatalf("Please provide the path")
+			log.Fatalf("Please provide the project file location")
 		}
-		discoverAPIRoutes(args[0])
 
-		if !config.IsLoaded() {
-			log.Fatalf("Please provide the path2")
+		config := config.Config{
+			ProjectPath: args[0],
+			OutputPath:  outputPath,
 		}
+
+		if err := config.Validate(); err != nil {
+			log.Fatalf(err.Error())
+		}
+
+		if err := config.LoadConfigRepo(); err != nil {
+			log.Fatalf(err.Error())
+		}
+
+		fmt.Println("📁 ProjectPath:", config.ProjectPath)
+		fmt.Println("📦 OutputPath:", config.OutputPath)
+
+		discoverAPIRoutes(config.ProjectPath)
+
 	},
 }
 
@@ -33,7 +49,6 @@ func discoverAPIRoutes(root string) {
 			return err
 		}
 
-		// Identify API route files specific to next.js projects old and new
 		routeAnalysis.AnalyzeAPIFile(path)
 		return nil
 	})
@@ -44,5 +59,6 @@ func discoverAPIRoutes(root string) {
 }
 
 func init() {
+	apiCmd.Flags().StringVarP(&outputPath, "output", "o", ".", "Output path for the results")
 	rootCmd.AddCommand(apiCmd)
 }

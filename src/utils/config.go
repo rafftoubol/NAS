@@ -45,9 +45,7 @@ func LoadConfig(configPath string) error {
 		return fmt.Errorf("unable to decode the struct of the config file: %w", err)
 	}
 
-	validate = validator.New(validator.WithRequiredStructEnabled())
-
-	if err := validate.Struct(&config); err != nil {
+	if err := config.Validate(); err != nil {
 		return fmt.Errorf("unable to validate the config file: %w", err)
 	}
 
@@ -59,6 +57,8 @@ func (config *Config) LoadConfigRepo() error {
 	// Parse the config value to get the repo
 	// Pre : POINTER to a loaded and validated config struct
 	// Post : config.ProjectPath will contain the new path of the project. Return an error if appears.
+
+	validate := validator.New(validator.WithRequiredStructEnabled())
 
 	if err := validate.Var(config.ProjectPath, "required,dir"); err != nil {
 		// If it's remote repository => clone the remote repository inside ./tmp
@@ -80,6 +80,12 @@ func (config *Config) LoadConfigRepo() error {
 	return nil
 }
 
-func IsLoaded() bool {
-	return NasConfig != nil
+func (config *Config) Validate() error {
+	validate := validator.New(validator.WithRequiredStructEnabled())
+
+	if err := validate.Struct(config); err != nil {
+		return fmt.Errorf("unable to validate the config file: %w", err)
+	}
+	fmt.Println("Input fields validated")
+	return nil
 }
