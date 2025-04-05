@@ -7,7 +7,7 @@ import (
 	"regexp"
 )
 
-// AnalyzeAPIFile analyzeAPIFile reads the file and detects HTTP methods & vulnerabilities
+// AnalyzeAPIFile reads the file and detects HTTP methods & vulnerabilities
 func AnalyzeAPIFile(path string) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -20,7 +20,7 @@ func AnalyzeAPIFile(path string) {
 	methods := map[string]bool{}
 	vulnerabilities := []string{}
 
-	// Regular expressions for detection
+	// Regex for detection. Could be modified if a better solution is available
 	reMethods := regexp.MustCompile(`(?i)(req\.method\s*===\s*['"]?(GET|POST|PUT|DELETE)['"]?)`)
 	reOpenCORS := regexp.MustCompile(`(?i)Access-Control-Allow-Origin.*\*`)
 	reEval := regexp.MustCompile(`(?i)\beval\s*\(`)
@@ -46,7 +46,7 @@ func AnalyzeAPIFile(path string) {
 		}
 	}
 
-	// Print results
+	// Print results. Improvements needed here for results
 	fmt.Println("   Methods:", keys(methods))
 	if len(vulnerabilities) > 0 {
 		fmt.Println("   ❗ Vulnerabilities found:")
