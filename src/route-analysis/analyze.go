@@ -14,11 +14,17 @@ func AnalyzeAPIFile(path string) {
 		fmt.Println("❌ Error reading file:", err)
 		return
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			fmt.Println("❌ Error reading file:", err)
+			return
+		}
+	}(file)
 
 	scanner := bufio.NewScanner(file)
 	methods := map[string]bool{}
-	vulnerabilities := []string{}
+	var vulnerabilities []string
 
 	// Regex for detection. Could be modified if a better solution is available
 	reMethods := regexp.MustCompile(`(?i)(req\.method\s*===\s*['"]?(GET|POST|PUT|DELETE)['"]?)`)
@@ -60,7 +66,7 @@ func AnalyzeAPIFile(path string) {
 
 // keys extracts keys from a map
 func keys(m map[string]bool) []string {
-	result := []string{}
+	var result []string
 	for k := range m {
 		result = append(result, k)
 	}

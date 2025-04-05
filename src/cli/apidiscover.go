@@ -3,6 +3,7 @@ package cli
 import (
 	routeAnalysis "attack-surface/src/route-analysis"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,12 +15,10 @@ var apiDiscoverCmd = &cobra.Command{
 	Use:   "routes-surface",
 	Short: "Discovers API routes in the Next.js project",
 	Run: func(cmd *cobra.Command, args []string) {
-		projectPath, err := cmd.Flags().GetString("path")
-		if err != nil || projectPath == "" {
-			fmt.Println("Please provide a valid project path using --path flag")
-			return
+		if len(args) < 1 {
+			log.Fatalf("Please provide the path")
 		}
-		discoverAPIRoutes(projectPath)
+		discoverAPIRoutes(args[0])
 	},
 }
 
@@ -35,7 +34,6 @@ func discoverAPIRoutes(root string) {
 		if !info.IsDir() && (strings.Contains(path, "/pages/api/") || strings.Contains(path, "/app/api/")) {
 			fmt.Println("🟢 Found API route:", path)
 			routeAnalysis.AnalyzeAPIFile(path)
-
 		}
 		return nil
 	})
@@ -46,6 +44,5 @@ func discoverAPIRoutes(root string) {
 }
 
 func init() {
-	apiDiscoverCmd.Flags().String("path", "", "Path to the Next.js project")
 	rootCmd.AddCommand(apiDiscoverCmd)
 }
