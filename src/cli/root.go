@@ -18,8 +18,6 @@ func Execute() {
 	}
 }
 
-var cfgFile string
-
 func init() {
 	cobra.OnInitialize(initProject)
 	rootCmd.CompletionOptions.DisableDefaultCmd = true

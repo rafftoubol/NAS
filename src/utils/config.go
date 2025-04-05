@@ -34,6 +34,9 @@ func LoadConfig(configPath string) error {
 	// Post : Return a POINTER type to a validate config struct and an error if appears.
 
 	viper.SetConfigFile(configPath)
+	viper.SetDefault("OutputPath", ".")
+
+	fmt.Println("Loading config from:", configPath)
 
 	if err := viper.ReadInConfig(); err != nil {
 		return fmt.Errorf("error reading the config file: %w", err)
@@ -64,19 +67,27 @@ func (config *Config) LoadConfigRepo() error {
 		// If it's remote repository => clone the remote repository inside ./tmp
 		// Else do nothing
 
-		fmt.Println("Cloning remote repository", config.ProjectPath)
+		fmt.Println("🔄 Cloning remote repository", config.ProjectPath)
 
 		destPath := path.Join("./tmp", strings.TrimSuffix(path.Base(config.ProjectPath), ".git")) // Get the name of the repository from the URL.
 		if _, err := git.PlainClone(destPath, false, &git.CloneOptions{
 			URL:      config.ProjectPath,
 			Progress: os.Stdout,
 		}); err != nil {
-			return fmt.Errorf("unable to clone the remote repository: %w", err)
+			if err.Error() != "repository already exists" {
+				return fmt.Errorf("unable to clone the remote repository: %w", err)
+			}
+			fmt.Println("\t- Repository already present")
+
 		}
 
 		config.ProjectPath = destPath
 	}
 
+	fmt.Println("\033[31m" + `Options` + "\033[0m")
+	fmt.Println("📁 ProjectPath:", config.ProjectPath)
+	fmt.Println("📦 OutputPath:", config.OutputPath)
+	// Expand with future cong Options
 	return nil
 }
 
@@ -86,6 +97,6 @@ func (config *Config) Validate() error {
 	if err := validate.Struct(config); err != nil {
 		return fmt.Errorf("unable to validate the config file: %w", err)
 	}
-	fmt.Println("Input fields validated")
+	fmt.Println("✅  Input fields validated")
 	return nil
 }

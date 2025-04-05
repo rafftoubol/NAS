@@ -13,7 +13,7 @@ import (
 var outputPath string
 
 var apiCmd = &cobra.Command{
-	Use:   "api",
+	Use:   "api [project_path]",
 	Short: "Discovers API routes in the Next.js project",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 1 {
@@ -32,9 +32,6 @@ var apiCmd = &cobra.Command{
 		if err := config.LoadConfigRepo(); err != nil {
 			log.Fatalf(err.Error())
 		}
-
-		fmt.Println("📁 ProjectPath:", config.ProjectPath)
-		fmt.Println("📦 OutputPath:", config.OutputPath)
 
 		discoverAPIRoutes(config.ProjectPath)
 
