@@ -25,12 +25,14 @@ We also define at least two short meeting per week to review the current status 
 - Unsecured HTTP headers
 
 
-## Architecture
+## Architecture 
 
 - **Scanner Module** : Responsible for scanning the dependencies and API routes.
 - **Visualization Module** : Generate the visualization of the attack surface from the scanning process.
 - **Report Generator** : Compile the findings into a structured report _(PDF,HTML)_.
 - **CLI Interface:** : Command Line Interface
+
+The visual draft of the architecture can be viewed [here](https://excalidraw.com/#json=eOSnuwrJvgsdgsHzBxNv-,69EJhqRWTUTs13yfYTpSYQ).
 
 ### Utilities 
 
