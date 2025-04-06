@@ -78,6 +78,7 @@ func Scan(path string) *APIs {
 				Line:    lineNum,
 			})
 		}
+
 		if reEval.MatchString(line) {
 			rce = append(rce, Vulnerability{
 				Type:    "Eval",
@@ -86,6 +87,7 @@ func Scan(path string) *APIs {
 				Line:    lineNum,
 			})
 		}
+
 		if reAPIKey.MatchString(line) {
 			apiKey = append(apiKey, Vulnerability{
 				Type:    "APIKey",
@@ -94,6 +96,7 @@ func Scan(path string) *APIs {
 				Line:    lineNum,
 			})
 		}
+
 		if reCommentSecret.MatchString(line) {
 			apiKey = append(comments, Vulnerability{
 				Type:    "CommentSecret",

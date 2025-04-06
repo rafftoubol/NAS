@@ -10,6 +10,7 @@ import (
 )
 
 var outputPath string
+var verbose bool
 
 var apiCmd = &cobra.Command{
 	Use:   "api [project_path]",
@@ -49,7 +50,7 @@ func discoverAPIRoutes(root string) {
 			return err
 		}
 
-		// TODO :output to output file.
+		// TODO :write to output file.
 		var result = api.Scan(path)
 
 		if err != nil {
@@ -57,27 +58,26 @@ func discoverAPIRoutes(root string) {
 			return nil
 		}
 
-		//Output to terminal still. Needs to maybe flag output it, if output in cli flag is available then do all below.
-		//Also, this is outputting for every path, should we aggregate result and output all at once?
+		if verbose {
+			for _, m := range result.Methods {
+				fmt.Printf("⚠️ [Method] %s found in %s at line %d\n \t[Content] %s\n", m.Type, m.Path, m.Line, m.Content)
+			}
 
-		for _, m := range result.Methods {
-			fmt.Printf("⚠️ [Method] %s found in %s at line %d\n \t[Content] %s\n", m.Type, m.Path, m.Line, m.Content)
-		}
+			for _, m := range result.RCE {
+				fmt.Printf("🚨  [Vulnerability] type %s found in %s at line %d\n \t[Content] %s\n", m.Type, m.Path, m.Line, m.Content)
+			}
 
-		for _, m := range result.RCE {
-			fmt.Printf("🚨  [Vulnerability] type %s found in %s at line %d\n \t[Content] %s\n", m.Type, m.Path, m.Line, m.Content)
-		}
+			for _, m := range result.CORS {
+				fmt.Printf("🚨  [Vulnerability] type %s found in %s at line %d\n \t[Content] %s\n", m.Type, m.Path, m.Line, m.Content)
+			}
 
-		for _, m := range result.CORS {
-			fmt.Printf("🚨  [Vulnerability] type %s found in %s at line %d\n \t[Content] %s\n", m.Type, m.Path, m.Line, m.Content)
-		}
+			for _, m := range result.ApiKey {
+				fmt.Printf("🚨  [Vulnerability] type %s found in %s at line %d\n \t[Content] %s\n", m.Type, m.Path, m.Line, m.Content)
+			}
 
-		for _, m := range result.ApiKey {
-			fmt.Printf("🚨  [Vulnerability] type %s found in %s at line %d\n \t[Content] %s\n", m.Type, m.Path, m.Line, m.Content)
-		}
-
-		for _, m := range result.CoomentsSecrets {
-			fmt.Printf("🚨  [Vulnerability] type %s found in %s at line %d\n \t[Content] %s\n", m.Type, m.Path, m.Line, m.Content)
+			for _, m := range result.CoomentsSecrets {
+				fmt.Printf("🚨  [Vulnerability] type %s found in %s at line %d\n \t[Content] %s\n", m.Type, m.Path, m.Line, m.Content)
+			}
 		}
 
 		if err != nil {
@@ -93,5 +93,6 @@ func discoverAPIRoutes(root string) {
 
 func init() {
 	apiCmd.Flags().StringVarP(&outputPath, "output", "o", ".", "Output path for the results")
+	apiCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose output to terminal")
 	rootCmd.AddCommand(apiCmd)
 }
