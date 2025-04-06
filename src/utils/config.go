@@ -23,8 +23,10 @@ import (
 var NasConfig *Config
 
 type Config struct {
-	ProjectPath string `mapstructure:"projectPath" validate:"required,url|dir"`
-	OutputPath  string `mapstructure:"outputPath" validate:"omitempty,dir"`
+	ProjectPath      string `mapstructure:"projectPath" validate:"required,url|dir"`
+	OutputPath       string `mapstructure:"outputPath" validate:"omitempty,dir"`
+	ApiScan          bool   `mapstructure:"apiScan" validate:"omitempty,boolean"`
+	DependenciesScan bool   `mapstructure:"dependenciesScan" validate:"omitempty,boolean"`
 }
 
 func LoadConfig(configPath string) error {
@@ -34,6 +36,8 @@ func LoadConfig(configPath string) error {
 
 	viper.SetConfigFile(configPath)
 	viper.SetDefault("OutputPath", ".")
+	viper.SetDefault("ApiScan", true)
+	viper.SetDefault("DependenciesScan", true)
 
 	fmt.Println("Loading config from:", configPath)
 
@@ -85,7 +89,9 @@ func (config *Config) LoadConfigRepo() error {
 
 	fmt.Println("\033[31m" + `Options` + "\033[0m")
 	fmt.Println("📁 ProjectPath:", config.ProjectPath)
-	fmt.Println("📦 OutputPath:", config.OutputPath)
+	fmt.Println("📂 OutputPath:", config.OutputPath)
+	fmt.Println("🔗 API Scan Enabled:", config.ApiScan)
+	fmt.Println("📔 Dependencies Scan Enabled:", config.DependenciesScan)
 	// Expand with future cong Options
 	return nil
 }

@@ -21,8 +21,10 @@ var apiCmd = &cobra.Command{
 		}
 
 		config := config.Config{
-			ProjectPath: args[0],
-			OutputPath:  outputPath,
+			ProjectPath:      args[0],
+			OutputPath:       outputPath,
+			ApiScan:          true,
+			DependenciesScan: false,
 		}
 
 		if err := config.Validate(); err != nil {
