@@ -7,14 +7,13 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "cli",
+	Use:   "nas",
 	Short: "",
 	Long:  "",
 }
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
 		os.Exit(1)
 	}
 }
@@ -35,5 +34,4 @@ func initProject() {
                         \|_________|` + "\033[0m")
 
 	// TODO : Insert here logic for refresh cache
-
 }

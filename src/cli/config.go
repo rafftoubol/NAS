@@ -4,36 +4,32 @@ import (
 	"attack-surface/src/utils"
 	"fmt"
 	"github.com/spf13/cobra"
-	"log"
+	"os"
 )
 
 var configCmd = &cobra.Command{
-	Use:   "config [path_to_config]",
-	Short: "",
-	Long:  "",
+	Use:   "config [config_file_path]",
+	Short: "Load configuration from	a JSON, TOML, YAML, HCL file",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 1 {
-			log.Fatalf("Please provide the config file path")
+			fmt.Println("Missing config file path argument. Please provide the config file path as an argument.")
+			os.Exit(1)
 		}
 
-		configPath := args[0]
-
-		config, err := utils.LoadConfig(configPath)
-		if err != nil {
-			log.Fatalf("Error loading config: %v", err)
+		if err := utils.LoadConfig(args[0]); err != nil {
+			fmt.Println("🛑", err.Error())
+			os.Exit(1)
 		}
 
-		if err := config.LoadConfigRepo(); err != nil {
-			log.Fatalf("Error loading repo %v:", err)
+		if err := utils.NasConfig.LoadConfigRepo(); err != nil {
+			fmt.Println("🛑", err.Error())
+			os.Exit(1)
 		}
 
-		next, err := utils.InitNext(config.ProjectPath)
-		if err != nil {
-			log.Fatalf("Error: %s", err)
+		if _, err := utils.InitNext(utils.NasConfig.ProjectPath); err != nil {
+			fmt.Println("🛑", err.Error())
+			os.Exit(1)
 		}
-		fmt.Println("Project Name:", next.Name)
-		fmt.Println("Project Version:", next.Version)
-		fmt.Println("Next Version:", next.Dependencies["next"])
 
 	},
 }
