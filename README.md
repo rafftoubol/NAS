@@ -1,3 +1,6 @@
+# Please see readme in DEVELOP Branch for the most up to date and detailed information (Including readme)...
+# Main will only get major releases (POC, MVP & Final)
+
 # Next Attack Surface
 
 NAS _(Next.js Attack Surface)_ is a _Command Line Interface_  to visualize the attack surface of a given Next.js project.
