@@ -1,16 +1,14 @@
 package cli
 
 import (
-	"attack-surface/src/api"
+	api "attack-surface/src/api"
 	config "attack-surface/src/utils"
 	"fmt"
 	"github.com/spf13/cobra"
 	"os"
-	"path/filepath"
 )
 
 var outputPath string
-var verbose bool
 
 var apiCmd = &cobra.Command{
 	Use:   "api [project_path]",
@@ -21,12 +19,11 @@ var apiCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		config := config.Config{
-			ProjectPath:      args[0],
-			OutputPath:       outputPath,
-			ApiScan:          true,
-			DependenciesScan: false,
-		}
+		config, _ := config.NewConfigBuilder().
+			DefProjectPath(args[0]).
+			DefApiScan(true).
+			WithDefaults().
+			Build()
 
 		if err := config.Validate(); err != nil {
 			fmt.Println("🛑", err.Error())
@@ -37,62 +34,12 @@ var apiCmd = &cobra.Command{
 			fmt.Println("🛑", err.Error())
 			os.Exit(1)
 		}
-
-		discoverAPIRoutes(config.ProjectPath)
+		fmt.Println(config.ProjectPath, config.OutputPath, config.ApiScan, config.DependenciesScan)
+		api.DiscoverAPIRoutes(config.ProjectPath)
 	},
-}
-
-func discoverAPIRoutes(root string) {
-	fmt.Println("🔍 Scanning for API routes in:", root)
-
-	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		// TODO :write to output file.
-		var result = api.Scan(path)
-
-		if err != nil {
-			fmt.Println(err)
-			return nil
-		}
-
-		if verbose {
-			for _, m := range result.Methods {
-				fmt.Printf("⚠️ [Method] %s found in %s at line %d\n \t[Content] %s\n", m.Type, m.Path, m.Line, m.Content)
-			}
-
-			for _, m := range result.RCE {
-				fmt.Printf("🚨  [Vulnerability] type %s found in %s at line %d\n \t[Content] %s\n", m.Type, m.Path, m.Line, m.Content)
-			}
-
-			for _, m := range result.CORS {
-				fmt.Printf("🚨  [Vulnerability] type %s found in %s at line %d\n \t[Content] %s\n", m.Type, m.Path, m.Line, m.Content)
-			}
-
-			for _, m := range result.ApiKey {
-				fmt.Printf("🚨  [Vulnerability] type %s found in %s at line %d\n \t[Content] %s\n", m.Type, m.Path, m.Line, m.Content)
-			}
-
-			for _, m := range result.CoomentsSecrets {
-				fmt.Printf("🚨  [Vulnerability] type %s found in %s at line %d\n \t[Content] %s\n", m.Type, m.Path, m.Line, m.Content)
-			}
-		}
-
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-
-	if err != nil {
-		fmt.Println("❌ Error scanning:", err)
-	}
 }
 
 func init() {
 	apiCmd.Flags().StringVarP(&outputPath, "output", "o", ".", "Output path for the results")
-	apiCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose output to terminal")
 	rootCmd.AddCommand(apiCmd)
 }
