@@ -11,6 +11,7 @@ package utils
 
 import (
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"os"
 	"path"
 	"strings"
@@ -115,16 +116,16 @@ func LoadConfig(configPath string) error {
 	viper.SetDefault("ApiScan", true)
 	viper.SetDefault("DependenciesScan", true)
 
-	fmt.Println("Loading config from:", configPath)
+	logrus.Info("Loading config from:", configPath)
 
 	if err := viper.ReadInConfig(); err != nil {
-		return fmt.Errorf("error reading the config file: %w", err)
+		return fmt.Errorf("Error reading the config file: %w ", err)
 	}
 
 	var config Config
 
 	if err := viper.Unmarshal(&config); err != nil {
-		return fmt.Errorf("unable to decode the struct of the config file: %w", err)
+		return fmt.Errorf("Unable to decode the struct of the config file: %w ", err)
 	}
 
 	if err := config.Validate(); err != nil {
@@ -146,7 +147,7 @@ func (config *Config) LoadConfigRepo() error {
 		// If it's remote repository => clone the remote repository inside ./tmp
 		// Else do nothing
 
-		fmt.Println("🔄 Cloning remote repository", config.ProjectPath)
+		logrus.Infof("Cloning remote repository %s", config.ProjectPath)
 
 		destPath := path.Join("./tmp", strings.TrimSuffix(path.Base(config.ProjectPath), ".git")) // Get the name of the repository from the URL.
 		if _, err := git.PlainClone(destPath, false, &git.CloneOptions{
@@ -154,20 +155,18 @@ func (config *Config) LoadConfigRepo() error {
 			Progress: os.Stdout,
 		}); err != nil {
 			if err.Error() != "repository already exists" {
-				return fmt.Errorf("unable to clone the remote repository: %w", err)
+				return fmt.Errorf("Unable to clone the remote repository: %w ", err)
 			}
-			fmt.Println("\t- Repository already present")
+			logrus.Warn("Repository already present")
 
 		}
 
 		config.ProjectPath = destPath
 	}
 
-	fmt.Println("\033[31m" + `Options` + "\033[0m")
-	fmt.Println("📁 ProjectPath:", config.ProjectPath)
-	fmt.Println("📂 OutputPath:", config.OutputPath)
-	fmt.Println("🔗 API Scan Enabled:", config.ApiScan)
-	fmt.Println("📔 Dependencies Scan Enabled:", config.DependenciesScan)
+	logrus.Debugf("Options Loaded: ProjectPath: %s, OutputPath: %s, API Scan Enabled: %v, Dependencies Scan Enabled: %v",
+		config.ProjectPath, config.OutputPath, config.ApiScan, config.DependenciesScan)
+
 	// Expand with future cong Options
 	return nil
 }
@@ -176,8 +175,8 @@ func (config *Config) Validate() error {
 	validate := validator.New(validator.WithRequiredStructEnabled())
 
 	if err := validate.Struct(config); err != nil {
-		return fmt.Errorf("unable to validate the config file: %w", err)
+		return fmt.Errorf("Unable to validate the config file: %w ", err)
 	}
-	fmt.Println("✅  Input fields validated")
+	logrus.Debugln("Input fields validated")
 	return nil
 }

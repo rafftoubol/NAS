@@ -5,37 +5,25 @@
 package utils
 
 import (
-	"fmt"
-	"log"
-	"os"
-	"strings"
-	"time"
+	"github.com/sirupsen/logrus"
 )
 
-// SetupLog, add validation and test
-func SetupLog(logPath string, logName string) (*log.Logger, error) {
-
-	// If no / at the end of the path provide it
-	if !strings.HasSuffix(logPath, "/") {
-		logPath = logPath + "/" + logName
+func SetUpLogger(verbose bool) {
+	if verbose {
+		logrus.SetLevel(logrus.DebugLevel)
+		//logFile, err := os.OpenFile("output.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+		//if err != nil {
+		//	logrus.Warn("Error opening log file: %v", err)
+		//}
+		//logrus.SetOutput(logFile)
+		//fmt.Println("Check file './output.log' for the full output.")
 	} else {
-		logPath = logPath + logName
-	}
-	// Create the log directory if it doesn't exist
-	err := os.MkdirAll(logPath, os.ModePerm)
-	if err != nil {
-
-		return nil, fmt.Errorf("error creating log directory: %w", err)
-	}
-	// Create the log file
-	logFile, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return nil, fmt.Errorf("error creating log file: %v", err)
+		logrus.SetLevel(logrus.InfoLevel)
 	}
 
-	// Create a new logger
-	Logger := log.New(logFile, "", log.LstdFlags)
-	Logger.Println("Log file created at", logPath)
-	fmt.Println("Log file created at", time.Now())
-	return Logger, nil
+	logrus.SetFormatter(&logrus.TextFormatter{
+		TimestampFormat: "2006-01-02 15:04:05",
+		FullTimestamp:   true,
+	})
+
 }

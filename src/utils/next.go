@@ -38,26 +38,26 @@ func InitNext(projectPath string) (*Next, error) {
 	})
 
 	if err == nil {
-		return nil, fmt.Errorf("package.json not found")
+		return nil, fmt.Errorf("Package.json not found ")
 	}
 
 	if err.Error() != "found" {
-		return nil, fmt.Errorf("error while reading the directory: %w", err)
+		return nil, fmt.Errorf("Error while reading the directory: %w ", err)
 	}
 
 	data, err := os.ReadFile(packagePath)
 	if err != nil {
-		return nil, fmt.Errorf("error opening package.json: %w", err)
+		return nil, fmt.Errorf("Error opening package.json: %w ", err)
 	}
 
 	var next Next
 
 	if err := json.Unmarshal(data, &next); err != nil {
-		return nil, fmt.Errorf("error reading package.json: %w", err)
+		return nil, fmt.Errorf("Error reading package.json: %w ", err)
 	}
 
 	if next.Dependencies["next"] == "" {
-		return nil, fmt.Errorf("next.js not found")
+		return nil, fmt.Errorf("Next.js not found ")
 	}
 	return &next, nil
 }
