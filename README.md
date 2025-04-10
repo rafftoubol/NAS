@@ -1,5 +1,6 @@
-# Please see readme in DEVELOP Branch for the most up to date and detailed information (Including readme)...
-# Main will only get major releases (POC, MVP & Final)
+> _Please see readme in DEVELOP Branch for the most up to date and detailed information (Including readme)._
+> 
+> _Main will only get major releases (POC, MVP & Final)._
 
 # Next Attack Surface
 
