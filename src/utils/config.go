@@ -29,6 +29,69 @@ type Config struct {
 	DependenciesScan bool   `mapstructure:"dependenciesScan" validate:"omitempty,boolean"`
 }
 
+// We need to be able to specify default config values easily,
+// We can use viper for that however
+type ConfigBuilder struct {
+	config *Config
+}
+
+/*
+This struct takes an input of a config and returns a pointer to a Config struct
+*/
+func NewConfigBuilder() *ConfigBuilder {
+	return &ConfigBuilder{
+		config: &Config{
+			OutputPath:       ".",
+			ApiScan:          true,
+			DependenciesScan: true,
+			//whatever other default values you want to set
+		},
+	}
+}
+
+/*
+Each of these functions are used to set the default values of the config struct
+Preconditions:
+  - The ConfigBuilder struct is initialized
+    The function takes a string as an argument,
+    which is the name of the field to set the default value for
+
+Postconditions:
+  - The ConfigBuilder struct is updated with the default values
+    The function returns a pointer to the ConfigBuilder struct
+*/
+func (b *ConfigBuilder) DefOutputPath(outputPath string) *ConfigBuilder {
+	b.config.OutputPath = "."
+	return b
+}
+
+func (b *ConfigBuilder) DefApiScan(apiScan bool) *ConfigBuilder {
+	b.config.ApiScan = true
+	return b
+}
+
+func (b *ConfigBuilder) DefDependenciesScan(dependenciesScan bool) *ConfigBuilder {
+	b.config.DependenciesScan = true
+	return b
+}
+
+//Add more methods here as we add more config options
+
+func (b *ConfigBuilder) WithDefaults() *ConfigBuilder {
+	b.config.OutputPath = "."
+	b.config.ApiScan = true
+	b.config.DependenciesScan = true
+	return b
+}
+
+func (b *ConfigBuilder) Build() (*Config, error) {
+	if err := b.config.Validate(); err != nil {
+		fmt.Println("🛑", err.Error())
+		os.Exit(1)
+	}
+	return b.config, nil
+}
+
 func LoadConfig(configPath string) error {
 	// Simple reading of the config file
 	// Pre :  A STRING type containing the config file path
