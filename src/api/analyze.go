@@ -30,7 +30,7 @@ func Scan(path string) *APIs {
 	}
 	defer func(file *os.File) {
 		if err := file.Close(); err != nil {
-			fmt.Printf("❌ Error closing file: %v", err)
+			fmt.Printf("Error closing file: %v", err)
 		}
 	}(file)
 

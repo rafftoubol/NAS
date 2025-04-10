@@ -88,7 +88,7 @@ func FetchCVE(cveRepo string) (*CVEs, error) {
 	}(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to fetch CVEs: %s", resp.Status)
+		return nil, fmt.Errorf("Failed to fetch CVEs: %s ", resp.Status)
 	}
 
 	body, err := io.ReadAll(resp.Body)
@@ -100,7 +100,7 @@ func FetchCVE(cveRepo string) (*CVEs, error) {
 	var rawData map[string][][]json.RawMessage
 	err = json.Unmarshal(body, &rawData)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse raw CVE data: %v", err)
+		return nil, fmt.Errorf("Failed to parse raw CVE data: %v ", err)
 	}
 
 	// Create our final CVEs structure
