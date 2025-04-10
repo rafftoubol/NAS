@@ -4,6 +4,7 @@ import (
 	api "attack-surface/src/api"
 	config "attack-surface/src/utils"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"os"
 )
@@ -15,8 +16,8 @@ var apiCmd = &cobra.Command{
 	Short: "Discovers API routes in the Next.js project",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 1 {
-			fmt.Println("Missing project path argument. Please provide the project path as an argument.")
-			os.Exit(1)
+			logrus.Fatalln("Missing project path argument. Please provide the project path as an argument.")
+
 		}
 
 		config, _ := config.NewConfigBuilder().
@@ -26,13 +27,11 @@ var apiCmd = &cobra.Command{
 			Build()
 
 		if err := config.Validate(); err != nil {
-			fmt.Println("🛑", err.Error())
-			os.Exit(1)
+			logrus.Fatalln(err)
 		}
 
 		if err := config.LoadConfigRepo(); err != nil {
-			fmt.Println("🛑", err.Error())
-			os.Exit(1)
+			logrus.Fatalln(err)
 		}
 		fmt.Println(config.ProjectPath, config.OutputPath, config.ApiScan, config.DependenciesScan)
 		api.DiscoverAPIRoutes(config.ProjectPath)
