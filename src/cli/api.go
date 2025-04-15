@@ -1,12 +1,10 @@
 package cli
 
 import (
-	api "attack-surface/src/api"
+	"attack-surface/src/api"
 	config "attack-surface/src/utils"
-	"fmt"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var outputPath string
@@ -33,8 +31,11 @@ var apiCmd = &cobra.Command{
 		if err := config.LoadConfigRepo(); err != nil {
 			logrus.Fatalln(err)
 		}
-		fmt.Println(config.ProjectPath, config.OutputPath, config.ApiScan, config.DependenciesScan)
+		/* Debug Printing Leaving it here in case I need it again
+		fmt.Println("Project Path:", config.ProjectPath, "Output Path:", config.OutputPath, "API Scan T/F", config.ApiScan, "Dependency Scan T/F", config.DependenciesScan)
+		*/
 		api.DiscoverAPIRoutes(config.ProjectPath)
+
 	},
 }
 

@@ -60,6 +60,21 @@ Preconditions:
 Postconditions:
   - The ConfigBuilder struct is updated with the default values
     The function returns a pointer to the ConfigBuilder struct
+
+Usage:
+1. Inside the function your calling, inside where you call your config you specify Def...(CLI ARG OR Concrete value)
+2. then you use withdefaults() which sets any configs not specified to false.
+3. Build()
+
+e.g.
+
+	config, _ := config.NewConfigBuilder().
+		DefProjectPath(args[0]).
+		DefApiScan(true).
+		WithDefaults().
+		Build()
+
+To be honest I just realised a cleaner way to do this, next week I will refactor again because its not so important
 */
 func (b *ConfigBuilder) DefProjectPath(projectPath string) *ConfigBuilder {
 	b.config.ProjectPath = projectPath
@@ -72,13 +87,22 @@ func (b *ConfigBuilder) DefOutputPath(outputPath string) *ConfigBuilder {
 }
 
 func (b *ConfigBuilder) DefApiScan(apiScan bool) *ConfigBuilder {
-	b.config.ApiScan = true
+	b.config.ApiScan = &apiScan
+	/* Debug Printing leaving it incase I need it again
+	fmt.Println("b.config.apiScan", b.config.ApiScan)
+	fmt.Println("ApiImTrue")
+	*/
 	return b
 }
 
 func (b *ConfigBuilder) DefDependenciesScan(dependenciesScan bool) *ConfigBuilder {
-	b.config.DependenciesScan = true
+	b.config.DependenciesScan = &dependenciesScan
+	/* Debug Printing leaving it incase I need it again
+	fmt.Println("b.config.depScan", b.config.DependenciesScan)
+	fmt.Println("DepImTrue")
+	*/
 	return b
+
 }
 
 //Add more methods here as we add more config options
