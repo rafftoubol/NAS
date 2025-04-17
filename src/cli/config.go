@@ -23,9 +23,11 @@ var configCmd = &cobra.Command{
 			logrus.Fatalln(err)
 		}
 
-		if _, err := utils.InitNext(utils.NasConfig.ProjectPath); err != nil {
+		next, err := utils.InitNext(utils.NasConfig.ProjectPath)
+		if err != nil {
 			logrus.Fatalln(err)
 		}
+		utils.GlobalNext = next
 
 	},
 }

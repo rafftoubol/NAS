@@ -21,6 +21,8 @@ type Next struct {
 	Scripts         map[string]string `json:"scripts"`
 }
 
+var GlobalNext *Next
+
 func InitNext(projectPath string) (*Next, error) {
 	// Create a Next Object Containing the most important information about the project.
 	var packagePath string
@@ -59,5 +61,9 @@ func InitNext(projectPath string) (*Next, error) {
 	if next.Dependencies["next"] == "" {
 		return nil, fmt.Errorf("Next.js not found ")
 	}
+
+	//fmt.Println("dependencies:", next.Dependencies)
+	//fmt.Println("devDependencies:", next.DevDependencies)
+
 	return &next, nil
 }

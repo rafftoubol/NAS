@@ -3,6 +3,7 @@ package cli
 import (
 	"attack-surface/src/utils"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"os"
 )
@@ -31,6 +32,8 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Display additional information")
 }
 
+var CVERepo = "https://cve.circl.lu/api/search/vercel/next.js"
+
 func initProject() {
 
 	fmt.Println("\033[31m" + ` ________   ________  ________      
@@ -41,6 +44,12 @@ func initProject() {
    \ \__\\ \__\ \__\ \__\____\_\  \ 
     \|__| \|__|\|__|\|__|\_________\
                         \|_________|` + "\033[0m")
-	// TODO : Insert here logic for refresh cache
 	utils.SetUpLogger(verbose)
+	_, err := utils.CVECacheChecker()
+	if err != nil {
+		logrus.Fatalln(err)
+		return
+	} else {
+		logrus.Infoln("CVE cache validated")
+	}
 }
