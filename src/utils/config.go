@@ -30,14 +30,13 @@ type Config struct {
 	DependenciesScan *bool  `mapstructure:"dependenciesScan" validate:"omitempty,boolean"`
 }
 
-// We need to be able to specify default config values easily,
-// We can use viper for that however
+// ConfigBuilder We need to be able to specify default config values easily,
 type ConfigBuilder struct {
 	config *Config
 }
 
 /*
-This struct takes an input of a config and returns a pointer to a Config struct
+NewConfigBuilder This struct takes an input of a config and returns a pointer to a Config struct
 */
 func NewConfigBuilder() *ConfigBuilder {
 	return &ConfigBuilder{

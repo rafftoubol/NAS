@@ -62,8 +62,10 @@ func InitNext(projectPath string) (*Next, error) {
 		return nil, fmt.Errorf("Next.js not found ")
 	}
 
-	//fmt.Println("dependencies:", next.Dependencies)
+	fmt.Println("dependencies:", next.Dependencies)
 	//fmt.Println("devDependencies:", next.DevDependencies)
+
+	GlobalNext = &next
 
 	return &next, nil
 }
