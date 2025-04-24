@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"attack-surface/src/scanner"
 	"attack-surface/src/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -23,10 +24,18 @@ var configCmd = &cobra.Command{
 			logrus.Fatalln(err)
 		}
 
-		if _, err := utils.InitNext(utils.NasConfig.ProjectPath); err != nil {
+		next, err := utils.InitNext(utils.NasConfig.ProjectPath)
+		if err != nil {
 			logrus.Fatalln(err)
 		}
 
+		if err := scanner.Scanner(next.Dependencies); err != nil {
+			logrus.Fatalln(err)
+		}
+
+		if err := scanner.Scanner(next.DevDependencies); err != nil {
+			logrus.Fatalln(err)
+		}
 	},
 }
 

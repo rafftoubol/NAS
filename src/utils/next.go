@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -59,5 +60,9 @@ func InitNext(projectPath string) (*Next, error) {
 	if next.Dependencies["next"] == "" {
 		return nil, fmt.Errorf("Next.js not found ")
 	}
+
+	logrus.Infoln("Dependencies:", next.Dependencies)
+	//fmt.Println("devDependencies:", next.DevDependencies)
+
 	return &next, nil
 }

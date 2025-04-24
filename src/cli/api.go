@@ -1,3 +1,13 @@
+/*
+The point of this file is to add the functionality to specify the API Scan functionality via the cli, instead of just
+from the config file -- this is secondary functionality really
+
+PRE: CLI Inputs (ARGS), projectpath
+POST: config with defaults
+
+...???
+*/
+
 package cli
 
 import (
