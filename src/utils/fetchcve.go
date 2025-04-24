@@ -38,6 +38,7 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
 	"os"
@@ -51,6 +52,8 @@ type CVEs struct {
 }
 
 func FetchCVE(cveRepo string) (*CVEs, error) {
+
+	logrus.Debug("Fetching CVE")
 	resp, err := http.Get(cveRepo)
 	if err != nil {
 		return nil, err
@@ -75,12 +78,6 @@ func FetchCVE(cveRepo string) (*CVEs, error) {
 	Cves := CVEs{
 		LastUpdated: time.Now(),
 		Data:        body,
-	}
-
-	if err != nil {
-		return nil, err
-	} else {
-
 	}
 
 	// Save to cache

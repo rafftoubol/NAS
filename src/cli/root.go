@@ -45,11 +45,11 @@ func initProject() {
     \|__| \|__|\|__|\|__|\_________\
                         \|_________|` + "\033[0m")
 	utils.SetUpLogger(verbose)
-	_, err := utils.CVECacheChecker()
-	if err != nil {
+
+	if _, err := utils.CVECacheChecker(); err != nil {
 		logrus.Fatalln(err)
-		return
 	} else {
-		logrus.Infoln("CVE cache validated")
+		logrus.Debugln("CVE cache validated")
 	}
+
 }

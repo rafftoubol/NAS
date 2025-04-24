@@ -37,7 +37,7 @@ func CVECacheChecker() (*CVEs, error) {
 	// A) Check if the database file exists
 	_, err := os.Stat(databasePath)
 	if err != nil {
-		logrus.Errorf("CVE cache file %s does not exist, or is inaccessible: %v", databasePath, err)
+		logrus.Warnf("CVE cache file %s does not exist, or is inaccessible: %v", databasePath, err)
 		cve, err := FetchCVE(cveRepo)
 		if err != nil {
 			return nil, err
@@ -47,7 +47,7 @@ func CVECacheChecker() (*CVEs, error) {
 	// B) Check if the file can be opened
 	file, err := os.Open(databasePath)
 	if err != nil {
-		logrus.Errorf("Failed to open CVE database cache file %s: %v", databasePath, err)
+		logrus.Warnf("Failed to open CVE database cache file %s: %v", databasePath, err)
 		cve, err := FetchCVE(cveRepo)
 		if err != nil {
 			return nil, err
@@ -64,12 +64,12 @@ func CVECacheChecker() (*CVEs, error) {
 	// C) Attempt to parse the JSON file into the CVEs structure
 	var Cves CVEs
 	if err := json.NewDecoder(file).Decode(&Cves); err != nil {
-		logrus.Errorf("CVE cache file %s is corrupt or unreadable: %v", databasePath, err)
-		return nil, fmt.Errorf("file is corrupt or unreadable: %w", err)
+		logrus.Warnf("CVE cache file %s is corrupt or unreadable: %v", databasePath, err)
+		return nil, fmt.Errorf("File is corrupt or unreadable: %w ", err)
 	}
 	// C) Check if the DB is older than 24 Hours
 	if Cves.IsExpired() {
-		logrus.Info("CVE database cache is expired, fetching new data...")
+		logrus.Warnf("CVE database cache is expired, fetching new data...")
 		cve, err := FetchCVE(cveRepo)
 		if err != nil {
 			return nil, err

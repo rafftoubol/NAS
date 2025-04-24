@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -20,8 +21,6 @@ type Next struct {
 	DevDependencies map[string]string `json:"devDependencies"`
 	Scripts         map[string]string `json:"scripts"`
 }
-
-var GlobalNext *Next
 
 func InitNext(projectPath string) (*Next, error) {
 	// Create a Next Object Containing the most important information about the project.
@@ -62,10 +61,8 @@ func InitNext(projectPath string) (*Next, error) {
 		return nil, fmt.Errorf("Next.js not found ")
 	}
 
-	fmt.Println("dependencies:", next.Dependencies)
+	logrus.Infoln("Dependencies:", next.Dependencies)
 	//fmt.Println("devDependencies:", next.DevDependencies)
-
-	GlobalNext = &next
 
 	return &next, nil
 }

@@ -41,32 +41,26 @@ when we have more scan function we can rename this to dependency scanner, and wr
 */
 func Scanner(dependenciesMap map[string]string) error {
 	//dependenciesMap := utils.GlobalNext.Dependencies
-	queries, err := DependencyMapper(dependenciesMap)
-	if err != nil {
-		logrus.Fatalln("Error forming dependencies to scan", err)
-		return err
-	}
+	queries := DependencyMapper(dependenciesMap)
 
 	// Pretty print the request payload
-	err = prettyPrintRequest(queries)
-	if err != nil {
-		fmt.Println("Error printing request:", err)
+
+	if err := prettyPrintRequest(queries); err != nil {
+		return err
 	}
 
 	resBody, err := OSVRequestHandler(queries)
 	if err != nil {
-		logrus.Fatalln("Error Scanning dependencies against the OSV Database", err)
 		return err
 	}
 
-	fmt.Println(string(resBody))
+	logrus.Infoln(string(resBody))
 
 	// Format and print JSON response
 	var prettyJSON bytes.Buffer
 	err = json.Indent(&prettyJSON, resBody, "", "  ")
 	if err != nil {
-		fmt.Println("Error formatting JSON:", err)
-		return err
+		return fmt.Errorf("Error formatting JSON: %w ", err)
 	}
 	return nil
 }
@@ -75,7 +69,7 @@ func Scanner(dependenciesMap map[string]string) error {
 DependencyMapper Function for mapping the data in the next dependencies struct field to an OSVQuery format
 With Package -> Name, Version & Ecosystem
 */
-func DependencyMapper(dependencies map[string]string) ([]OSVQuery, error) {
+func DependencyMapper(dependencies map[string]string) []OSVQuery {
 	queries := make([]OSVQuery, 0, len(dependencies))
 	// Process each dependency
 	for pkg, ver := range dependencies {
@@ -98,7 +92,7 @@ func DependencyMapper(dependencies map[string]string) ([]OSVQuery, error) {
 
 		queries = append(queries, query)
 	}
-	return queries, nil
+	return queries
 }
 
 /*
@@ -115,8 +109,8 @@ func OSVRequestHandler(queries []OSVQuery) ([]byte, error) {
 	// Convert request to JSON
 	jsonPayload, err := json.Marshal(OSVRequest)
 	if err != nil {
-		fmt.Println("Error marshaling JSON:", err)
-		return nil, err
+
+		return nil, fmt.Errorf("Error marshaling JSON: %w ", err)
 	}
 
 	// Make the HTTP request to OSV API
@@ -126,16 +120,19 @@ func OSVRequestHandler(queries []OSVQuery) ([]byte, error) {
 		bytes.NewBuffer(jsonPayload),
 	)
 	if err != nil {
-		logrus.Fatalln("Error making request:", err)
-		return nil, err
+		return nil, fmt.Errorf("Error making request: %w ", err)
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			logrus.Errorln("Error reading response: ", err)
+		}
+	}(resp.Body)
 
 	// Read the response
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logrus.Fatalln("Error reading response:", err)
-		return nil, err
+		return nil, fmt.Errorf("Error reading response: %w ", err)
 	}
 
 	return body, nil
@@ -153,18 +150,17 @@ func prettyPrintRequest(queries []OSVQuery) error {
 	// Convert request to JSON
 	jsonPayload, err := json.Marshal(request)
 	if err != nil {
-		return fmt.Errorf("error marshaling JSON: %w", err)
+		return fmt.Errorf("Error marshaling JSON: %w ", err)
 	}
 
 	// Format JSON for pretty printing
 	var prettyJSON bytes.Buffer
 	err = json.Indent(&prettyJSON, jsonPayload, "", "  ")
 	if err != nil {
-		return fmt.Errorf("error formatting JSON: %w", err)
+		return fmt.Errorf("Error formatting JSON: %w ", err)
 	}
 
-	fmt.Println("OSV API Request Payload:")
-	fmt.Println(prettyJSON.String())
+	//logrus.Infof("OSV API Request Payload: %v", prettyJSON.String())
 
 	return nil
 }
