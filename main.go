@@ -6,12 +6,14 @@ import (
 
 func main() {
 	cli.Execute()
-	/* EXAMPLE USAGE OF FETCH CVES
-		TO DO: Proper integration into main
-	if CVEs, err := utils.FetchCVE("https://cve.circl.lu/api/search/vercel/next.js"); err != nil {
-		fmt.Println(err)
-	} else {
-		fmt.Println(CVEs)
-	}
+	/*
+		err := scanner.Scanner(utils.GlobalNext.Dependencies)
+		if err != nil {
+			return
+		}
+		err = scanner.Scanner(utils.GlobalNext.DevDependencies)
+		if err != nil {
+			return
+		}
 	*/
 }

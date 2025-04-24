@@ -1,4 +1,4 @@
-package dependencyscan
+package dependencyscan_Deprecated_
 
 import (
 	"attack-surface/src/utils"
