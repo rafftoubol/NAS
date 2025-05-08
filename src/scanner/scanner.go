@@ -146,5 +146,11 @@ func (b *Scanner) Print() error {
 	}
 
 	// Here put report logic
-	return report.GeneratePDF(b.report.DepReport, b.config.OutputPath)
+	// Change in the future
+	// This control that we have this
+	if b.config.DependenciesScan != nil && *b.config.DependenciesScan {
+		return report.GeneratePDF(b.report.DepReport, b.config.OutputPath)
+	}
+
+	return nil
 }
