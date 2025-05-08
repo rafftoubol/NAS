@@ -1,4 +1,4 @@
-package api
+package apiScanner
 
 import (
 	"fmt"
@@ -29,6 +29,10 @@ func DiscoverAPIRoutes(root string) *APIs {
 	if err != nil {
 		fmt.Println("❌ Error scanning:", err)
 		return nil
+	}
+
+	if err != nil {
+		fmt.Println("❌ Error scanning:", err)
 	}
 
 	return &allResults
