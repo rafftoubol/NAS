@@ -17,8 +17,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var outputPath string
-
 var codeCmd = &cobra.Command{
 	Use:   "code [project_path]",
 	Short: "Discovers API routes in the Next.js project",
@@ -31,6 +29,7 @@ var codeCmd = &cobra.Command{
 		cfg, _ := config.NewConfigBuilder().
 			DefProjectPath(args[0]).
 			DefCodeScan(true).
+			DefOutputPath(OutputPath).
 			WithDefaults().
 			Build()
 		// Validation of the config
@@ -52,6 +51,5 @@ var codeCmd = &cobra.Command{
 }
 
 func init() {
-	codeCmd.Flags().StringVarP(&outputPath, "output", "o", ".", "Output path for the results")
 	rootCmd.AddCommand(codeCmd)
 }
