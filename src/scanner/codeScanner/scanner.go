@@ -117,7 +117,7 @@ func ScanFile(path string) (*CodeScanReport, error) {
 	}, err
 }
 
-func CodeScan(root string) (*CodeScanReport, error) {
+func CodeScanner(root string) (*CodeScanReport, error) {
 	var allResults CodeScanReport
 
 	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {

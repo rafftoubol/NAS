@@ -1,5 +1,5 @@
 /*
-The purpose of this file is to reshape next.dependencies, and next.devDependencies into a OSV-Scanner payload so that
+The purpose of this file is to reshape next.dependencies, and next.devDependencies into a OSV-DepScanner payload so that
 we can simply curl a batch of packages and versions, receive the response as json
 
 PRE: Defined and filled Next struct (next)
@@ -39,7 +39,7 @@ type OSVBatchRequest struct {
 Scanner this function forms the dependencies and makes the request to the OSV API,
 when we have more scan function we can rename this to dependency scanner, and wrap it in another func - scanner again
 */
-func Scanner(dependenciesMap map[string]string) error {
+func DepScanner(dependenciesMap map[string]string) error {
 	//dependenciesMap := utils.GlobalNext.Dependencies
 	queries := DependencyMapper(dependenciesMap)
 
