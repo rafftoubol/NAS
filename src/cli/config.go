@@ -29,6 +29,8 @@ var configCmd = &cobra.Command{
 			logrus.Fatalln(err)
 		}
 
+		//TODO: Fix how scanner Dependency works so as to run it along with the api scanner @menny & @raph
+
 		if err := scanner.Scanner(next.Dependencies); err != nil {
 			logrus.Fatalln(err)
 		}
