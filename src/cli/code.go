@@ -29,6 +29,7 @@ var codeCmd = &cobra.Command{
 		cfg, _ := config.NewConfigBuilder().
 			DefProjectPath(args[0]).
 			DefCodeScan(true).
+			DefOutputPath(OutputPath).
 			WithDefaults().
 			Build()
 		// Validation of the config

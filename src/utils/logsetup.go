@@ -11,12 +11,12 @@ import (
 func SetUpLogger(verbose bool) {
 	if verbose {
 		logrus.SetLevel(logrus.DebugLevel)
-		//logFile, err := os.OpenFile("output.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+		//logFile, err := os.OpenFile("report.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
 		//if err != nil {
 		//	logrus.Warn("Error opening log file: %v", err)
 		//}
 		//logrus.SetOutput(logFile)
-		//fmt.Println("Check file './output.log' for the full output.")
+		//fmt.Println("Check file './report.log' for the full report.")
 	} else {
 		logrus.SetLevel(logrus.InfoLevel)
 	}

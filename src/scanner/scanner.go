@@ -12,6 +12,8 @@ import (
 	"attack-surface/src/scanner/depScanner"
 	"attack-surface/src/utils"
 	"attack-surface/src/utils/config"
+	"attack-surface/src/utils/report"
+	"fmt"
 	"github.com/sirupsen/logrus"
 )
 
@@ -21,9 +23,9 @@ type Scanner struct {
 }
 
 type Result struct {
-	codeReport   *codeScanner.CodeScanReport
-	depReport    *depScanner.Response // Temporary -> Would Become Vuln
-	depDevReport *depScanner.Response // Temporary -> Would Become Vuln
+	CodeReport   *codeScanner.CodeScanReport
+	DepReport    *depScanner.Response // Temporary -> Would Become Vuln
+	DepDevReport *depScanner.Response // Temporary -> Would Become Vuln
 }
 
 func NewScanner(config *config.Config) *Scanner {
@@ -67,8 +69,8 @@ func (b *Scanner) Scan() error {
 			b.report = &Result{}
 		}
 
-		b.report.depReport = depReport
-		b.report.depDevReport = depDevReport
+		b.report.DepReport = depReport
+		b.report.DepDevReport = depDevReport
 
 	} else {
 		logrus.Info("Dependencies Scan is Skipped (Disabled)")
@@ -87,7 +89,7 @@ func (b *Scanner) Scan() error {
 			b.report = &Result{}
 		}
 
-		b.report.codeReport = codeReport
+		b.report.CodeReport = codeReport
 
 		logrus.Info("Code Scan Enabled")
 	} else {
@@ -95,21 +97,24 @@ func (b *Scanner) Scan() error {
 	}
 
 	logrus.Infoln("Scan Successful")
-
-	b.Print()
+	logrus.Debug("Generating Report")
+	if err := b.Print(); err != nil {
+		return err
+	}
+	logrus.Infoln("Report Generated")
 	return nil
 }
 
-func (b *Scanner) Print() {
+func (b *Scanner) Print() error {
 	// Temporary -> Logic to print file will be here.
 	// Now just print out Vuln found
 	if b.report == nil {
-		return
+		return fmt.Errorf("No report found")
 	}
 	if b.config.DependenciesScan != nil && *b.config.DependenciesScan {
 
 		// Print out devReport
-		for i, result := range b.report.depReport.Results {
+		for i, result := range b.report.DepReport.Results {
 			if len(result.Vulns) > 0 {
 				logrus.Infof("Package %d found with %d vulnerabilitys:", i, len(result.Vulns))
 				for _, vuln := range result.Vulns {
@@ -118,7 +123,7 @@ func (b *Scanner) Print() {
 			}
 		}
 		// Print out devDevReport
-		for i, result := range b.report.depDevReport.Results {
+		for i, result := range b.report.DepDevReport.Results {
 			if len(result.Vulns) > 0 {
 				logrus.Infof("Package %d found with %d vulnerabilitys:", i, len(result.Vulns))
 				for _, vuln := range result.Vulns {
@@ -128,17 +133,18 @@ func (b *Scanner) Print() {
 		}
 	}
 	if b.config.CodeScan != nil && *b.config.CodeScan {
-		if len(b.report.codeReport.Methods) > 0 || len(b.report.codeReport.CORS) > 0 || len(b.report.codeReport.RCE) > 0 ||
-			len(b.report.codeReport.ApiKey) > 0 || len(b.report.codeReport.CoomentsSecrets) > 0 {
-			logrus.Println("Methods ", b.report.codeReport.Methods)
-			logrus.Println("CORS ", b.report.codeReport.CORS)
-			logrus.Println("RCE ", b.report.codeReport.RCE)
-			logrus.Println("ApiKey ", b.report.codeReport.ApiKey)
-			logrus.Println("CoomentsSecrets ", b.report.codeReport.CoomentsSecrets)
+		if len(b.report.CodeReport.Methods) > 0 || len(b.report.CodeReport.CORS) > 0 || len(b.report.CodeReport.RCE) > 0 ||
+			len(b.report.CodeReport.ApiKey) > 0 || len(b.report.CodeReport.CoomentsSecrets) > 0 {
+			logrus.Println("Methods ", b.report.CodeReport.Methods)
+			logrus.Println("CORS ", b.report.CodeReport.CORS)
+			logrus.Println("RCE ", b.report.CodeReport.RCE)
+			logrus.Println("ApiKey ", b.report.CodeReport.ApiKey)
+			logrus.Println("CoomentsSecrets ", b.report.CodeReport.CoomentsSecrets)
 		} else {
 			logrus.Println("Code Scan: No vulnerabilities found")
 		}
 	}
-	// Here put output logic
-	return
+
+	// Here put report logic
+	return report.GeneratePDF(b.report.DepReport, b.config.OutputPath)
 }

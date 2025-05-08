@@ -14,6 +14,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/go-git/go-git/v5"
@@ -23,7 +24,7 @@ import (
 
 type Config struct {
 	ProjectPath      string `mapstructure:"projectPath" validate:"required,url|dir"`
-	OutputPath       string `mapstructure:"outputPath" validate:"omitempty,dir"`
+	OutputPath       string `mapstructure:"outputPath" validate:"omitempty,filepath"`
 	CodeScan         *bool  `mapstructure:"codeScan" validate:"omitempty,boolean"`
 	DependenciesScan *bool  `mapstructure:"dependenciesScan" validate:"omitempty,boolean"`
 }
@@ -34,7 +35,7 @@ func LoadConfigFile(configPath string) (*Config, error) {
 	// Post : Return a POINTER type to a validate config struct and an error if appears.
 
 	viper.SetConfigFile(configPath)
-	viper.SetDefault("OutputPath", ".")
+	viper.SetDefault("OutputPath", "./report.pdf")
 	viper.SetDefault("CodeScan", true)
 	viper.SetDefault("DependenciesScan", true)
 
@@ -92,6 +93,11 @@ func (c *Config) Validate() error {
 
 	if err := validate.Struct(c); err != nil {
 		return fmt.Errorf("Unable to validate the config file: %w ", err)
+	}
+
+	// Check if the report file is .pdf
+	if strings.ToLower(filepath.Ext(c.OutputPath)) != ".pdf" {
+		return fmt.Errorf("Unable to validate the config file: report path must be a pdf file")
 	}
 	logrus.Debugln("Input fields validated")
 	return nil
