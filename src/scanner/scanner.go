@@ -106,37 +106,39 @@ func (b *Scanner) Print() {
 	if b.report == nil {
 		return
 	}
+	if b.config.DependenciesScan != nil && *b.config.DependenciesScan {
 
-	// Print out devReport
-	for i, result := range b.report.depReport.Results {
-		if len(result.Vulns) > 0 {
-			logrus.Infof("Package %d found with %d vulnerabilitys:", i, len(result.Vulns))
-			for _, vuln := range result.Vulns {
-				logrus.Infof("- ID: %s, Modified: %s", vuln.ID, vuln.Modified)
+		// Print out devReport
+		for i, result := range b.report.depReport.Results {
+			if len(result.Vulns) > 0 {
+				logrus.Infof("Package %d found with %d vulnerabilitys:", i, len(result.Vulns))
+				for _, vuln := range result.Vulns {
+					logrus.Infof("- ID: %s, Modified: %s", vuln.ID, vuln.Modified)
+				}
+			}
+		}
+		// Print out devDevReport
+		for i, result := range b.report.depDevReport.Results {
+			if len(result.Vulns) > 0 {
+				logrus.Infof("Package %d found with %d vulnerabilitys:", i, len(result.Vulns))
+				for _, vuln := range result.Vulns {
+					logrus.Infof("- ID: %s, Modified: %s", vuln.ID, vuln.Modified)
+				}
 			}
 		}
 	}
-	// Print out devDevReport
-	for i, result := range b.report.depDevReport.Results {
-		if len(result.Vulns) > 0 {
-			logrus.Infof("Package %d found with %d vulnerabilitys:", i, len(result.Vulns))
-			for _, vuln := range result.Vulns {
-				logrus.Infof("- ID: %s, Modified: %s", vuln.ID, vuln.Modified)
-			}
+	if b.config.CodeScan != nil && *b.config.CodeScan {
+		if len(b.report.codeReport.Methods) > 0 || len(b.report.codeReport.CORS) > 0 || len(b.report.codeReport.RCE) > 0 ||
+			len(b.report.codeReport.ApiKey) > 0 || len(b.report.codeReport.CoomentsSecrets) > 0 {
+			logrus.Println("Methods ", b.report.codeReport.Methods)
+			logrus.Println("CORS ", b.report.codeReport.CORS)
+			logrus.Println("RCE ", b.report.codeReport.RCE)
+			logrus.Println("ApiKey ", b.report.codeReport.ApiKey)
+			logrus.Println("CoomentsSecrets ", b.report.codeReport.CoomentsSecrets)
+		} else {
+			logrus.Println("Code Scan: No vulnerabilities found")
 		}
 	}
-
-	if len(b.report.codeReport.Methods) > 0 || len(b.report.codeReport.CORS) > 0 || len(b.report.codeReport.RCE) > 0 ||
-		len(b.report.codeReport.ApiKey) > 0 || len(b.report.codeReport.CoomentsSecrets) > 0 {
-		logrus.Println("Methods ", b.report.codeReport.Methods)
-		logrus.Println("CORS ", b.report.codeReport.CORS)
-		logrus.Println("RCE ", b.report.codeReport.RCE)
-		logrus.Println("ApiKey ", b.report.codeReport.ApiKey)
-		logrus.Println("CoomentsSecrets ", b.report.codeReport.CoomentsSecrets)
-	} else {
-		logrus.Println("Code Scan: No vulnerabilities found")
-	}
-
 	// Here put output logic
 	return
 }
