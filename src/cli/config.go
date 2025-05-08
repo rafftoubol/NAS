@@ -1,7 +1,7 @@
 package cli
 
 import (
-	"attack-surface/src/utils"
+	"attack-surface/src/utils/config"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -15,7 +15,7 @@ var configCmd = &cobra.Command{
 
 		}
 		// Create a config from the config file
-		cfg, err := utils.LoadConfigFile(args[0])
+		cfg, err := config.LoadConfigFile(args[0])
 		if err != nil {
 			logrus.Fatalln(err)
 		}
