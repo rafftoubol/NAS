@@ -1,10 +1,5 @@
 package config
 
-import (
-	"fmt"
-	"os"
-)
-
 // ConfigBuilder We need to be able to specify default config values easily,
 type ConfigBuilder struct {
 	config *Config
@@ -16,7 +11,7 @@ NewConfigBuilder This struct takes an input of a config and returns a pointer to
 func NewConfigBuilder() *ConfigBuilder {
 	return &ConfigBuilder{
 		config: &Config{
-			OutputPath:       ".",
+			OutputPath:       "",
 			CodeScan:         nil,
 			DependenciesScan: nil,
 			//whatever other default values you want to set
@@ -56,7 +51,7 @@ func (b *ConfigBuilder) DefProjectPath(projectPath string) *ConfigBuilder {
 }
 
 func (b *ConfigBuilder) DefOutputPath(outputPath string) *ConfigBuilder {
-	b.config.OutputPath = "."
+	b.config.OutputPath = outputPath
 	return b
 }
 
@@ -97,9 +92,5 @@ func (b *ConfigBuilder) WithDefaults() *ConfigBuilder {
 }
 
 func (b *ConfigBuilder) Build() (*Config, error) {
-	if err := b.config.Validate(); err != nil {
-		fmt.Println("🛑", err.Error())
-		os.Exit(1)
-	}
 	return b.config, nil
 }

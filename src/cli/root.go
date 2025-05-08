@@ -38,7 +38,7 @@ func init() {
 	cobra.OnInitialize(initProject)
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Display additional information")
-	rootCmd.PersistentFlags().StringVarP(&OutputPath, "output", "o", ".", "Output path for the results")
+	rootCmd.PersistentFlags().StringVarP(&OutputPath, "report", "o", "./report.pdf", "Output path for the results")
 }
 
 func initProject() {
