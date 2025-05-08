@@ -38,7 +38,7 @@ func LoadConfigFile(configPath string) (*Config, error) {
 	viper.SetDefault("CodeScan", true)
 	viper.SetDefault("DependenciesScan", true)
 
-	logrus.Info("Loading config from:", configPath)
+	logrus.Info("Loading config from: ", configPath)
 
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, fmt.Errorf("Error reading the config file: %w ", err)
