@@ -77,6 +77,6 @@ func CVECacheChecker() (*CVEs, error) {
 		return cve, nil
 	}
 
-	logrus.Info("Successfully validated the CVE database cache.")
+	logrus.Debug("Successfully validated the CVE database cache.")
 	return &Cves, nil
 }

@@ -9,12 +9,20 @@ import (
 )
 
 var (
-	verbose bool
+	OutputPath string
+	verbose    bool
+
 	rootCmd = &cobra.Command{
 		Use:   "nas",
 		Short: "",
 		Long:  "",
+		Args:  cobra.ArbitraryArgs,
 		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) == 0 {
+
+				cmd.Help()
+				return
+			}
 
 		},
 	}
@@ -30,9 +38,8 @@ func init() {
 	cobra.OnInitialize(initProject)
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Display additional information")
+	rootCmd.PersistentFlags().StringVarP(&OutputPath, "output", "o", ".", "Output path for the results")
 }
-
-var CVERepo = "https://cve.circl.lu/api/search/vercel/next.js"
 
 func initProject() {
 
