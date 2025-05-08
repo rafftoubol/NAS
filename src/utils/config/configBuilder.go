@@ -17,7 +17,7 @@ func NewConfigBuilder() *ConfigBuilder {
 	return &ConfigBuilder{
 		config: &Config{
 			OutputPath:       ".",
-			ApiScan:          nil,
+			CodeScan:         nil,
 			DependenciesScan: nil,
 			//whatever other default values you want to set
 		},
@@ -44,7 +44,7 @@ e.g.
 
 	config, _ := config.NewConfigBuilder().
 		DefProjectPath(args[0]).
-		DefApiScan(true).
+		DefCodeScan(true).
 		WithDefaults().
 		Build()
 
@@ -60,10 +60,10 @@ func (b *ConfigBuilder) DefOutputPath(outputPath string) *ConfigBuilder {
 	return b
 }
 
-func (b *ConfigBuilder) DefApiScan(apiScan bool) *ConfigBuilder {
-	b.config.ApiScan = &apiScan
+func (b *ConfigBuilder) DefCodeScan(codeScan bool) *ConfigBuilder {
+	b.config.CodeScan = &codeScan
 	/* Debug Printing leaving it incase I need it again
-	fmt.Println("b.config.apiScan", b.config.ApiScan)
+	fmt.Println("b.config.codeScan", b.config.CodeScan)
 	fmt.Println("ApiImTrue")
 	*/
 	return b
@@ -85,9 +85,9 @@ func (b *ConfigBuilder) WithDefaults() *ConfigBuilder {
 	if b.config.OutputPath == "" {
 		b.config.OutputPath = "."
 	}
-	if b.config.ApiScan == nil {
+	if b.config.CodeScan == nil {
 		defaultValue := false
-		b.config.ApiScan = &defaultValue
+		b.config.CodeScan = &defaultValue
 	}
 	if b.config.DependenciesScan == nil {
 		defaultValue := false
