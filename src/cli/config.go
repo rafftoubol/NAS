@@ -2,7 +2,7 @@ package cli
 
 import (
 	"attack-surface/src/scanner"
-	"attack-surface/src/utils/config"
+	"attack-surface/src/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )

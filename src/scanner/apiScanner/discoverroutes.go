@@ -6,49 +6,34 @@ import (
 	"path/filepath"
 )
 
-func DiscoverAPIRoutes(root string) {
-	fmt.Println("🔍 Scanning for API routes in:", root)
+func DiscoverAPIRoutes(root string) *APIs {
+	var allResults APIs
 
 	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 
-		// TODO :write to output file.
-		var result = Scan(path)
-
-		if err != nil {
-			fmt.Println(err)
-			return nil
+		result := Scan(path)
+		if result != nil {
+			allResults.Methods = append(allResults.Methods, result.Methods...)
+			allResults.RCE = append(allResults.RCE, result.RCE...)
+			allResults.CORS = append(allResults.CORS, result.CORS...)
+			allResults.ApiKey = append(allResults.ApiKey, result.ApiKey...)
+			allResults.CoomentsSecrets = append(allResults.CoomentsSecrets, result.CoomentsSecrets...)
 		}
 
-		for _, m := range result.Methods {
-			fmt.Printf("⚠️ [Method] %s found in %s at line %d\n \t[Content] %s\n", m.Type, m.Path, m.Line, m.Content)
-		}
-
-		for _, m := range result.RCE {
-			fmt.Printf("🚨  [Vulnerability] type %s found in %s at line %d\n \t[Content] %s\n", m.Type, m.Path, m.Line, m.Content)
-		}
-
-		for _, m := range result.CORS {
-			fmt.Printf("🚨  [Vulnerability] type %s found in %s at line %d\n \t[Content] %s\n", m.Type, m.Path, m.Line, m.Content)
-		}
-
-		for _, m := range result.ApiKey {
-			fmt.Printf("🚨  [Vulnerability] type %s found in %s at line %d\n \t[Content] %s\n", m.Type, m.Path, m.Line, m.Content)
-		}
-
-		for _, m := range result.CoomentsSecrets {
-			fmt.Printf("🚨  [Vulnerability] type %s found in %s at line %d\n \t[Content] %s\n", m.Type, m.Path, m.Line, m.Content)
-		}
-
-		if err != nil {
-			return err
-		}
 		return nil
 	})
 
 	if err != nil {
 		fmt.Println("❌ Error scanning:", err)
+		return nil
 	}
+
+	if err != nil {
+		fmt.Println("❌ Error scanning:", err)
+	}
+
+	return &allResults
 }
