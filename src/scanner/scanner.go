@@ -137,5 +137,6 @@ func (b *Scanner) Print() {
 		logrus.Println("Code Scan: No vulnerabilities found")
 	}
 
+	// Here put output logic
 	return
 }
