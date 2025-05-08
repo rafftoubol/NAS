@@ -2,13 +2,15 @@
 
 package scanner
 
-import "attack-surface/src/utils"
+import (
+	"attack-surface/src/utils/config"
+)
 
 type Scanner struct {
-	config *utils.Config
+	config *config.Config
 }
 
-func NewScanner(config *utils.Config) *Scanner {
+func NewScanner(config *config.Config) *Scanner {
 	return &Scanner{
 		config: config,
 	}

@@ -11,7 +11,7 @@ POST: config with defaults
 package cli
 
 import (
-	config "attack-surface/src/utils"
+	"attack-surface/src/utils/config"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -43,7 +43,7 @@ var apiCmd = &cobra.Command{
 		/* Debug Printing Leaving it here in case I need it again
 		fmt.Println("Project Path:", config.ProjectPath, "Output Path:", config.OutputPath, "API Scan T/F", config.ApiScan, "Dependency Scan T/F", config.DependenciesScan)
 		*/
-		// apiScanner.DiscoverAPIRoutes(config.ProjectPath)
+		//apiScanner.DiscoverAPIRoutes(config.ProjectPath)
 	},
 }
 
