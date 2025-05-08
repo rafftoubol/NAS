@@ -8,6 +8,10 @@ import (
 
 type Scanner struct {
 	config *config.Config
+	report *Result
+}
+
+type Result struct {
 }
 
 func NewScanner(config *config.Config) *Scanner {
@@ -16,8 +20,9 @@ func NewScanner(config *config.Config) *Scanner {
 	}
 }
 
-func (b *Scanner) Scan() {
-	return
+func (b *Scanner) Scan() error {
+
+	return nil
 }
 
 func (b *Scanner) Print() {
