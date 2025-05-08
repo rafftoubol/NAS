@@ -1,4 +1,4 @@
-package api
+package apiScanner
 
 import (
 	"fmt"
@@ -41,7 +41,7 @@ func DiscoverAPIRoutes(root string) {
 		for _, m := range result.CoomentsSecrets {
 			fmt.Printf("🚨  [Vulnerability] type %s found in %s at line %d\n \t[Content] %s\n", m.Type, m.Path, m.Line, m.Content)
 		}
-		
+
 		if err != nil {
 			return err
 		}

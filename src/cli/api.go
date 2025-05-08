@@ -11,7 +11,6 @@ POST: config with defaults
 package cli
 
 import (
-	"attack-surface/src/api"
 	config "attack-surface/src/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -20,7 +19,7 @@ import (
 var outputPath string
 
 var apiCmd = &cobra.Command{
-	Use:   "api [project_path]",
+	Use:   "apiScanner [project_path]",
 	Short: "Discovers API routes in the Next.js project",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 1 {
@@ -44,8 +43,7 @@ var apiCmd = &cobra.Command{
 		/* Debug Printing Leaving it here in case I need it again
 		fmt.Println("Project Path:", config.ProjectPath, "Output Path:", config.OutputPath, "API Scan T/F", config.ApiScan, "Dependency Scan T/F", config.DependenciesScan)
 		*/
-		api.DiscoverAPIRoutes(config.ProjectPath)
-
+		// apiScanner.DiscoverAPIRoutes(config.ProjectPath)
 	},
 }
 

@@ -21,8 +21,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-var NasConfig *Config
-
 type Config struct {
 	ProjectPath      string `mapstructure:"projectPath" validate:"required,url|dir"`
 	OutputPath       string `mapstructure:"outputPath" validate:"omitempty,dir"`
@@ -129,7 +127,7 @@ func (b *ConfigBuilder) Build() (*Config, error) {
 	return b.config, nil
 }
 
-func LoadConfig(configPath string) error {
+func LoadConfigFile(configPath string) (*Config, error) {
 	// Simple reading of the config file
 	// Pre :  A STRING type containing the config file path
 	// Post : Return a POINTER type to a validate config struct and an error if appears.
@@ -142,39 +140,37 @@ func LoadConfig(configPath string) error {
 	logrus.Info("Loading config from:", configPath)
 
 	if err := viper.ReadInConfig(); err != nil {
-		return fmt.Errorf("Error reading the config file: %w ", err)
+		return nil, fmt.Errorf("Error reading the config file: %w ", err)
 	}
 
 	var config Config
 
 	if err := viper.Unmarshal(&config); err != nil {
-		return fmt.Errorf("Unable to decode the struct of the config file: %w ", err)
+		return nil, fmt.Errorf("Unable to decode the struct of the config file: %w ", err)
 	}
 
 	if err := config.Validate(); err != nil {
-		return fmt.Errorf(err.Error())
+		return nil, fmt.Errorf(err.Error())
 	}
-
-	NasConfig = &config
-	return nil
+	return &config, nil
 }
 
-func (config *Config) LoadConfigRepo() error {
+func (c *Config) LoadConfigRepo() error {
 	// Parse the config value to get the repo
 	// Pre : POINTER to a loaded and validated config struct
 	// Post : config.ProjectPath will contain the new path of the project. Return an error if appears.
 
 	validate := validator.New(validator.WithRequiredStructEnabled())
 
-	if err := validate.Var(config.ProjectPath, "required,dir"); err != nil {
+	if err := validate.Var(c.ProjectPath, "required,dir"); err != nil {
 		// If it's remote repository => clone the remote repository inside ./tmp
 		// Else do nothing
 
-		logrus.Infof("Cloning remote repository %s", config.ProjectPath)
+		logrus.Infof("Cloning remote repository %s", c.ProjectPath)
 
-		destPath := path.Join("./tmp", strings.TrimSuffix(path.Base(config.ProjectPath), ".git")) // Get the name of the repository from the URL.
+		destPath := path.Join("./tmp", strings.TrimSuffix(path.Base(c.ProjectPath), ".git")) // Get the name of the repository from the URL.
 		if _, err := git.PlainClone(destPath, false, &git.CloneOptions{
-			URL:      config.ProjectPath,
+			URL:      c.ProjectPath,
 			Progress: os.Stdout,
 		}); err != nil {
 			if err.Error() != "repository already exists" {
@@ -184,20 +180,20 @@ func (config *Config) LoadConfigRepo() error {
 
 		}
 
-		config.ProjectPath = destPath
+		c.ProjectPath = destPath
 	}
 
 	logrus.Debugf("Options Loaded: ProjectPath: %s, OutputPath: %s, API Scan Enabled: %v, Dependencies Scan Enabled: %v",
-		config.ProjectPath, config.OutputPath, *config.ApiScan, *config.DependenciesScan)
+		c.ProjectPath, c.OutputPath, *c.ApiScan, *c.DependenciesScan)
 
 	// Expand with future cong Options
 	return nil
 }
 
-func (config *Config) Validate() error {
+func (c *Config) Validate() error {
 	validate := validator.New(validator.WithRequiredStructEnabled())
 
-	if err := validate.Struct(config); err != nil {
+	if err := validate.Struct(c); err != nil {
 		return fmt.Errorf("Unable to validate the config file: %w ", err)
 	}
 	logrus.Debugln("Input fields validated")
