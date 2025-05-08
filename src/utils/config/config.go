@@ -84,10 +84,6 @@ func (c *Config) LoadConfigRepo() error {
 		c.ProjectPath = destPath
 	}
 
-	logrus.Debugf("Options Loaded: ProjectPath: %s, OutputPath: %s, API Scan Enabled: %v, Dependencies Scan Enabled: %v",
-		c.ProjectPath, c.OutputPath, *c.CodeScan, *c.DependenciesScan)
-
-	// Expand with future cong Options
 	return nil
 }
 
