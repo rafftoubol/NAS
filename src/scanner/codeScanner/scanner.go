@@ -1,9 +1,10 @@
-package apiScanner
+package codeScanner
 
 import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 )
 
@@ -14,7 +15,7 @@ type Vulnerability struct {
 	Content string
 }
 
-type APIs struct {
+type CodeScanReport struct {
 	Methods         []Vulnerability
 	CORS            []Vulnerability
 	RCE             []Vulnerability
@@ -23,10 +24,10 @@ type APIs struct {
 }
 
 // Scan reads the file and detects HTTP methods & vulnerabilities
-func Scan(path string) *APIs {
+func ScanFile(path string) (*CodeScanReport, error) {
 	file, err := os.Open(path)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	defer func(file *os.File) {
 		if err := file.Close(); err != nil {
@@ -107,11 +108,45 @@ func Scan(path string) *APIs {
 		}
 	}
 
-	return &APIs{
+	return &CodeScanReport{
 		Methods:         methods,
 		CORS:            cors,
 		RCE:             rce,
 		ApiKey:          apiKey,
 		CoomentsSecrets: comments,
+	}, err
+}
+
+func CodeScan(root string) (*CodeScanReport, error) {
+	var allResults CodeScanReport
+
+	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Scan each file starting from the root
+		result, err := ScanFile(path)
+
+		if err != nil {
+			return err
+		}
+
+		// For each result found save it
+		if result != nil {
+			allResults.Methods = append(allResults.Methods, result.Methods...)
+			allResults.RCE = append(allResults.RCE, result.RCE...)
+			allResults.CORS = append(allResults.CORS, result.CORS...)
+			allResults.ApiKey = append(allResults.ApiKey, result.ApiKey...)
+			allResults.CoomentsSecrets = append(allResults.CoomentsSecrets, result.CoomentsSecrets...)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
 	}
+
+	return &allResults, nil
 }

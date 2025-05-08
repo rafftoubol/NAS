@@ -19,8 +19,8 @@ import (
 
 var outputPath string
 
-var apiCmd = &cobra.Command{
-	Use:   "api [project_path]",
+var codeCmd = &cobra.Command{
+	Use:   "code [project_path]",
 	Short: "Discovers API routes in the Next.js project",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 1 {
@@ -30,7 +30,7 @@ var apiCmd = &cobra.Command{
 		// Create a config from the argument
 		cfg, _ := config.NewConfigBuilder().
 			DefProjectPath(args[0]).
-			DefApiScan(true).
+			DefCodeScan(true).
 			WithDefaults().
 			Build()
 		// Validation of the config
@@ -52,6 +52,6 @@ var apiCmd = &cobra.Command{
 }
 
 func init() {
-	apiCmd.Flags().StringVarP(&outputPath, "output", "o", ".", "Output path for the results")
-	rootCmd.AddCommand(apiCmd)
+	codeCmd.Flags().StringVarP(&outputPath, "output", "o", ".", "Output path for the results")
+	rootCmd.AddCommand(codeCmd)
 }

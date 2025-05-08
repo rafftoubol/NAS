@@ -24,7 +24,7 @@ import (
 type Config struct {
 	ProjectPath      string `mapstructure:"projectPath" validate:"required,url|dir"`
 	OutputPath       string `mapstructure:"outputPath" validate:"omitempty,dir"`
-	ApiScan          *bool  `mapstructure:"apiScan" validate:"omitempty,boolean"`
+	CodeScan         *bool  `mapstructure:"codeScan" validate:"omitempty,boolean"`
 	DependenciesScan *bool  `mapstructure:"dependenciesScan" validate:"omitempty,boolean"`
 }
 
@@ -35,7 +35,7 @@ func LoadConfigFile(configPath string) (*Config, error) {
 
 	viper.SetConfigFile(configPath)
 	viper.SetDefault("OutputPath", ".")
-	viper.SetDefault("ApiScan", true)
+	viper.SetDefault("CodeScan", true)
 	viper.SetDefault("DependenciesScan", true)
 
 	logrus.Info("Loading config from:", configPath)
@@ -85,7 +85,7 @@ func (c *Config) LoadConfigRepo() error {
 	}
 
 	logrus.Debugf("Options Loaded: ProjectPath: %s, OutputPath: %s, API Scan Enabled: %v, Dependencies Scan Enabled: %v",
-		c.ProjectPath, c.OutputPath, *c.ApiScan, *c.DependenciesScan)
+		c.ProjectPath, c.OutputPath, *c.CodeScan, *c.DependenciesScan)
 
 	// Expand with future cong Options
 	return nil
