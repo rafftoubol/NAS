@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"attack-surface/src/scanner"
 	"attack-surface/src/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -15,29 +14,17 @@ var configCmd = &cobra.Command{
 			logrus.Fatalln("Missing config file path argument. Please provide the config file path as an argument.")
 
 		}
-
-		if err := utils.LoadConfig(args[0]); err != nil {
-			logrus.Fatalln(err)
-		}
-
-		if err := utils.NasConfig.LoadConfigRepo(); err != nil {
-			logrus.Fatalln(err)
-		}
-
-		next, err := utils.InitNext(utils.NasConfig.ProjectPath)
+		// Create a config from the config file
+		cfg, err := utils.LoadConfigFile(args[0])
 		if err != nil {
 			logrus.Fatalln(err)
 		}
 
-		//TODO: Fix how scanner Dependency works so as to run it along with the api scanner @menny & @raph
-
-		if err := scanner.Scanner(next.Dependencies); err != nil {
+		// Clone the repository
+		if err := cfg.LoadConfigRepo(); err != nil {
 			logrus.Fatalln(err)
 		}
 
-		if err := scanner.Scanner(next.DevDependencies); err != nil {
-			logrus.Fatalln(err)
-		}
 	},
 }
 
