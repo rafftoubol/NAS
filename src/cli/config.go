@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"attack-surface/src/scanner"
 	"attack-surface/src/utils/config"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -22,6 +23,13 @@ var configCmd = &cobra.Command{
 
 		// Clone the repository
 		if err := cfg.LoadConfigRepo(); err != nil {
+			logrus.Fatalln(err)
+		}
+
+		// Scanner Creation
+		scanner := scanner.NewScanner(cfg)
+		// Execute Scanner
+		if err := scanner.Scan(); err != nil {
 			logrus.Fatalln(err)
 		}
 
