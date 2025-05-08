@@ -61,8 +61,6 @@ func InitNext(projectPath string) (*Next, error) {
 		return nil, fmt.Errorf("Next.js not found ")
 	}
 
-	logrus.Infoln("Dependencies:", next.Dependencies)
-	//fmt.Println("devDependencies:", next.DevDependencies)
-
+	logrus.Debugf("Next project configured")
 	return &next, nil
 }

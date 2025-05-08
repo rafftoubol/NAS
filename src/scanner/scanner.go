@@ -1,166 +1,142 @@
 /*
-The purpose of this file is to reshape next.dependencies, and next.devDependencies into a OSV-Scanner payload so that
-we can simply curl a batch of packages and versions, receive the response as json
-
-PRE: Defined and filled Next struct (next)
-POST: Struct with vulnerabilities
-
-
+This file contains the declaration of the main DepScanner. It include all our scanning methods.
+Our aim is to provide a maintanable way to add feature to this scanner. This scanner can be easily expanded with new
+functions.
 
 */
 
 package scanner
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
+	"attack-surface/src/scanner/codeScanner"
+	"attack-surface/src/scanner/depScanner"
+	"attack-surface/src/utils"
+	"attack-surface/src/utils/config"
 	"github.com/sirupsen/logrus"
-	"io"
-	"net/http"
-	"strings"
 )
 
-// OSVQuery Struct for specifying a package in the API
-type OSVQuery struct {
-	Package struct {
-		Name      string `json:"name"`
-		Ecosystem string `json:"ecosystem"`
-	} `json:"package"`
-	Version string `json:"version"`
+type Scanner struct {
+	config *config.Config
+	report *Result
 }
 
-// OSVBatchRequest Struct for bundling many OSVQueries
-type OSVBatchRequest struct {
-	Queries []OSVQuery `json:"queries"`
+type Result struct {
+	codeReport   *codeScanner.CodeScanReport
+	depReport    *depScanner.Response // Temporary -> Would Become Vuln
+	depDevReport *depScanner.Response // Temporary -> Would Become Vuln
 }
 
-/*
-Scanner this function forms the dependencies and makes the request to the OSV API,
-when we have more scan function we can rename this to dependency scanner, and wrap it in another func - scanner again
-*/
-func Scanner(dependenciesMap map[string]string) error {
-	//dependenciesMap := utils.GlobalNext.Dependencies
-	queries := DependencyMapper(dependenciesMap)
-
-	// Pretty print the request payload
-
-	if err := prettyPrintRequest(queries); err != nil {
-		return err
+func NewScanner(config *config.Config) *Scanner {
+	return &Scanner{
+		config: config,
 	}
-
-	resBody, err := OSVRequestHandler(queries)
-	if err != nil {
-		return err
-	}
-
-	logrus.Infoln(string(resBody))
-
-	// Format and print JSON response
-	var prettyJSON bytes.Buffer
-	err = json.Indent(&prettyJSON, resBody, "", "  ")
-	if err != nil {
-		return fmt.Errorf("Error formatting JSON: %w ", err)
-	}
-	return nil
 }
 
-/*
-DependencyMapper Function for mapping the data in the next dependencies struct field to an OSVQuery format
-With Package -> Name, Version & Ecosystem
-*/
-func DependencyMapper(dependencies map[string]string) []OSVQuery {
-	queries := make([]OSVQuery, 0, len(dependencies))
-	// Process each dependency
-	for pkg, ver := range dependencies {
-		query := OSVQuery{}
+func (b *Scanner) Scan() error {
+	b.report = &Result{}
+	logrus.Debugf("Current Scan Option: ProjectPath: %s, OutputPath: %s, API Scan Enabled: %v, Dependencies Scan Enabled: %v",
+		b.config.ProjectPath, b.config.OutputPath, *b.config.CodeScan, *b.config.DependenciesScan)
 
-		// Remove leading @ if present
-		pkgName := pkg
-		if strings.HasPrefix(pkg, "@") {
-			pkgName = pkg[1:]
-		}
-		query.Package.Name = pkgName
-		query.Package.Ecosystem = "npm" // Assuming all are npm packages, when next.go is modified change this
+	// Expand with future cong Options
+	if b.config.DependenciesScan != nil && *b.config.DependenciesScan {
+		logrus.Info("Dependencies Scan Enabled")
 
-		// Remove ^ or ~ from version
-		version := ver
-		if strings.HasPrefix(ver, "^") || strings.HasPrefix(ver, "~") {
-			version = ver[1:]
-		}
-		query.Version = version
-
-		queries = append(queries, query)
-	}
-	return queries
-}
-
-/*
-OSVRequestHandler this functions purpose is to make batch requests to the OSV API, determining vulnerabilities,
-returning JSON of CVSS
-
-PRE: already shaped OSVQueries from the dependency Mapper
-POST: Either the JSON Response as bytes or an error
-*/
-func OSVRequestHandler(queries []OSVQuery) ([]byte, error) {
-	OSVRequest := OSVBatchRequest{
-		Queries: queries,
-	}
-	// Convert request to JSON
-	jsonPayload, err := json.Marshal(OSVRequest)
-	if err != nil {
-
-		return nil, fmt.Errorf("Error marshaling JSON: %w ", err)
-	}
-
-	// Make the HTTP request to OSV API
-	resp, err := http.Post(
-		"https://api.osv.dev/v1/querybatch",
-		"application/json",
-		bytes.NewBuffer(jsonPayload),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("Error making request: %w ", err)
-	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
+		// Parse Next.js -> Validate if is a Next.js Repository
+		next, err := utils.InitNext(b.config.ProjectPath)
 		if err != nil {
-			logrus.Errorln("Error reading response: ", err)
+			return err
 		}
-	}(resp.Body)
+		// Scan Dependencies
+		depReport, err := depScanner.DepScanner(next.Dependencies)
 
-	// Read the response
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("Error reading response: %w ", err)
+		if err != nil {
+			return err
+		}
+
+		if b.report == nil {
+			b.report = &Result{}
+		}
+		// Scan DevDependencies
+		depDevReport, err := depScanner.DepScanner(next.DevDependencies)
+
+		if err != nil {
+			return err
+		}
+
+		if b.report == nil {
+			b.report = &Result{}
+		}
+
+		b.report.depReport = depReport
+		b.report.depDevReport = depDevReport
+
+	} else {
+		logrus.Info("Dependencies Scan is Skipped (Disabled)")
 	}
 
-	return body, nil
+	if b.config.CodeScan != nil && *b.config.CodeScan {
+
+		// Run scanner code
+		codeReport, err := codeScanner.CodeScanner(b.config.ProjectPath)
+		if err != nil {
+			return err
+		}
+
+		// Check if b.report has been created
+		if b.report == nil {
+			b.report = &Result{}
+		}
+
+		b.report.codeReport = codeReport
+
+		logrus.Info("Code Scan Enabled")
+	} else {
+		logrus.Info("Code Scan is Skipped (Disabled)")
+	}
+
+	logrus.Infoln("Scan Successful")
+
+	b.Print()
+	return nil
 }
 
-/*
-prettyPrintRequest just for testing really
-*/
-func prettyPrintRequest(queries []OSVQuery) error {
-	// Create the OSV API request payload
-	request := OSVBatchRequest{
-		Queries: queries,
+func (b *Scanner) Print() {
+	// Temporary -> Logic to print file will be here.
+	// Now just print out Vuln found
+	if b.report == nil {
+		return
 	}
 
-	// Convert request to JSON
-	jsonPayload, err := json.Marshal(request)
-	if err != nil {
-		return fmt.Errorf("Error marshaling JSON: %w ", err)
+	// Print out devReport
+	for i, result := range b.report.depReport.Results {
+		if len(result.Vulns) > 0 {
+			logrus.Infof("Package %d found with %d vulnerabilitys:", i, len(result.Vulns))
+			for _, vuln := range result.Vulns {
+				logrus.Infof("- ID: %s, Modified: %s", vuln.ID, vuln.Modified)
+			}
+		}
+	}
+	// Print out devDevReport
+	for i, result := range b.report.depDevReport.Results {
+		if len(result.Vulns) > 0 {
+			logrus.Infof("Package %d found with %d vulnerabilitys:", i, len(result.Vulns))
+			for _, vuln := range result.Vulns {
+				logrus.Infof("- ID: %s, Modified: %s", vuln.ID, vuln.Modified)
+			}
+		}
 	}
 
-	// Format JSON for pretty printing
-	var prettyJSON bytes.Buffer
-	err = json.Indent(&prettyJSON, jsonPayload, "", "  ")
-	if err != nil {
-		return fmt.Errorf("Error formatting JSON: %w ", err)
+	if len(b.report.codeReport.Methods) > 0 || len(b.report.codeReport.CORS) > 0 || len(b.report.codeReport.RCE) > 0 ||
+		len(b.report.codeReport.ApiKey) > 0 || len(b.report.codeReport.CoomentsSecrets) > 0 {
+		logrus.Println("Methods ", b.report.codeReport.Methods)
+		logrus.Println("CORS ", b.report.codeReport.CORS)
+		logrus.Println("RCE ", b.report.codeReport.RCE)
+		logrus.Println("ApiKey ", b.report.codeReport.ApiKey)
+		logrus.Println("CoomentsSecrets ", b.report.codeReport.CoomentsSecrets)
+	} else {
+		logrus.Println("Code Scan: No vulnerabilities found")
 	}
 
-	//logrus.Infof("OSV API Request Payload: %v", prettyJSON.String())
-
-	return nil
+	// Here put output logic
+	return
 }
