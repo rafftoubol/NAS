@@ -35,34 +35,52 @@ type OSVBatchRequest struct {
 	Queries []OSVQuery `json:"queries"`
 }
 
+type Vuln struct {
+	ID       string `json:"id"`
+	Modified string `json:"modified"`
+}
+
+type Result struct {
+	Vulns []Vuln `json:"vulns,omitempty"`
+}
+
+type Response struct {
+	Results []Result `json:"results"`
+}
+
 /*
-Scanner this function forms the dependencies and makes the request to the OSV API,
+DepScanner this function forms the dependencies and makes the request to the OSV API,
 when we have more scan function we can rename this to dependency scanner, and wrap it in another func - scanner again
 */
-func DepScanner(dependenciesMap map[string]string) error {
+func DepScanner(dependenciesMap map[string]string) (*Response, error) {
 	//dependenciesMap := utils.GlobalNext.Dependencies
 	queries := DependencyMapper(dependenciesMap)
 
 	// Pretty print the request payload
 
 	if err := prettyPrintRequest(queries); err != nil {
-		return err
+		return nil, err
 	}
 
 	resBody, err := OSVRequestHandler(queries)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	logrus.Infoln(string(resBody))
+	var depReport Response
+
+	err = json.Unmarshal(resBody, &depReport)
+	if err != nil {
+		return nil, fmt.Errorf("errore nel parsing JSON: %w", err)
+	}
 
 	// Format and print JSON response
 	var prettyJSON bytes.Buffer
 	err = json.Indent(&prettyJSON, resBody, "", "  ")
 	if err != nil {
-		return fmt.Errorf("Error formatting JSON: %w ", err)
+		return nil, fmt.Errorf("Error formatting JSON: %w ", err)
 	}
-	return nil
+	return &depReport, nil
 }
 
 /*
