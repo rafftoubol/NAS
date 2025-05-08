@@ -21,6 +21,18 @@ import (
 	"strings"
 )
 
+type ScanResult struct {
+	Vulnerabilities []Vulnerability
+	RawResponse     []byte
+}
+
+type Vulnerability struct {
+	PackageName string
+	Version     string
+	Details     string
+	Severity    string
+}
+
 // OSVQuery Struct for specifying a package in the API
 type OSVQuery struct {
 	Package struct {
@@ -39,30 +51,41 @@ type OSVBatchRequest struct {
 Scanner this function forms the dependencies and makes the request to the OSV API,
 when we have more scan function we can rename this to dependency scanner, and wrap it in another func - scanner again
 */
-func Scanner(dependenciesMap map[string]string) error {
+func Scanner(dependenciesMap map[string]string) (*ScanResult, error) {
 	//dependenciesMap := utils.GlobalNext.Dependencies
 	queries := DependencyMapper(dependenciesMap)
 
 	// Pretty print the request payload
 
 	if err := prettyPrintRequest(queries); err != nil {
-		return err
+		return nil, err
 	}
 
 	resBody, err := OSVRequestHandler(queries)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	logrus.Infoln(string(resBody))
 
 	// Format and print JSON response
-	var prettyJSON bytes.Buffer
-	err = json.Indent(&prettyJSON, resBody, "", "  ")
-	if err != nil {
-		return fmt.Errorf("Error formatting JSON: %w ", err)
+	//var prettyJSON bytes.Buffer
+	//err = json.Indent(&prettyJSON, resBody, "", "  ")
+	//if err != nil {
+	//	return fmt.Errorf("Error formatting JSON: %w ", err)
+	//}
+
+	// Parse the response into structured data
+	var result ScanResult
+	result.RawResponse = resBody
+
+	// Parse vulnerabilities from resBody into result.Vulnerabilities
+	if err := json.Unmarshal(resBody, &result.Vulnerabilities); err != nil {
+		return nil, fmt.Errorf("error parsing vulnerabilities: %w", err)
 	}
-	return nil
+
+	return &result, nil
+
 }
 
 /*
