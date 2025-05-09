@@ -64,11 +64,11 @@ func (c *Config) LoadConfigRepo() error {
 
 	validate := validator.New(validator.WithRequiredStructEnabled())
 
-	if err := validate.Var(c.WithProjectPath, "required,dir"); err != nil {
+	if err := validate.Var(c.ProjectPath, "required,dir"); err != nil {
 		// If it's remote repository => clone the remote repository inside ./tmp
 		// Else do nothing
 
-		logrus.Infof("Cloning remote repository %s", c.WithProjectPath)
+		logrus.Infof("Cloning remote repository %s", c.ProjectPath)
 
 		destPath := path.Join("./tmp", strings.TrimSuffix(path.Base(c.ProjectPath), ".git")) // Get the name of the repository from the URL.
 		if _, err := git.PlainClone(destPath, false, &git.CloneOptions{

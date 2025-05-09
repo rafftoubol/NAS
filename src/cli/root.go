@@ -3,7 +3,6 @@ package cli
 import (
 	"attack-surface/src/utils"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"os"
 )
@@ -52,11 +51,5 @@ func initProject() {
     \|__| \|__|\|__|\|__|\_________\
                         \|_________|` + "\033[0m")
 	utils.SetUpLogger(verbose)
-
-	if _, err := utils.CVECacheChecker(); err != nil {
-		logrus.Fatalln(err)
-	} else {
-		logrus.Debugln("CVE cache validated")
-	}
 
 }
