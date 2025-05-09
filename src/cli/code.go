@@ -19,7 +19,7 @@ import (
 
 var codeCmd = &cobra.Command{
 	Use:   "code [project_path]",
-	Short: "Discovers API routes in the Next.js project",
+	Short: "Discovers dangerous code pattern in the Next.js project",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 

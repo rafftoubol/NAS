@@ -147,6 +147,6 @@ func CodeScanner(root string) (*CodeScanReport, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(allResults)
+
 	return &allResults, nil
 }

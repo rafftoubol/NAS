@@ -80,6 +80,7 @@ func DepScanner(dependenciesMap map[string]string) (*Response, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Error formatting JSON: %w ", err)
 	}
+
 	return &depReport, nil
 }
 

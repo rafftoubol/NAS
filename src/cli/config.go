@@ -10,11 +10,9 @@ import (
 var configCmd = &cobra.Command{
 	Use:   "config [config_file_path]",
 	Short: "Load configuration from	a JSON, TOML, YAML, HCL file",
+	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) < 1 {
-			logrus.Fatalln("Missing config file path argument. Please provide the config file path as an argument.")
 
-		}
 		// Create a config from the config file
 		cfg, err := config.LoadConfigFile(args[0])
 		if err != nil {
