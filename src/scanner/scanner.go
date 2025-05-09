@@ -36,15 +36,15 @@ func NewScanner(config *config.Config) *Scanner {
 
 func (b *Scanner) Scan() error {
 	b.report = &Result{}
-	logrus.Debugf("Current Scan Option: ProjectPath: %s, OutputPath: %s, API Scan Enabled: %v, Dependencies Scan Enabled: %v",
-		b.config.ProjectPath, b.config.OutputPath, *b.config.CodeScan, *b.config.DependenciesScan)
+	logrus.Debugf("Current Scan Option: WithProjectPath: %s, OutputPath: %s, API Scan Enabled: %v, Dependencies Scan Enabled: %v",
+		b.config.WithProjectPath, b.config.OutputPath, *b.config.CodeScan, *b.config.DependenciesScan)
 
 	// Expand with future cong Options
 	if b.config.DependenciesScan != nil && *b.config.DependenciesScan {
 		logrus.Info("Dependencies Scan Enabled")
 
 		// Parse Next.js -> Validate if is a Next.js Repository
-		next, err := utils.InitNext(b.config.ProjectPath)
+		next, err := utils.InitNext(b.config.WithProjectPath)
 		if err != nil {
 			return err
 		}
@@ -79,7 +79,7 @@ func (b *Scanner) Scan() error {
 	if b.config.CodeScan != nil && *b.config.CodeScan {
 
 		// Run scanner code
-		codeReport, err := codeScanner.CodeScanner(b.config.ProjectPath)
+		codeReport, err := codeScanner.CodeScanner(b.config.WithProjectPath)
 		if err != nil {
 			return err
 		}
