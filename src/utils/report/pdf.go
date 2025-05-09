@@ -54,5 +54,6 @@ func GeneratePDF(r *depScanner.Response, outputPath string) error {
 			})
 		}
 	}
+
 	return m.OutputFileAndClose(outputPath)
 }

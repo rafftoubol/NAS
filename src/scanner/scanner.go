@@ -111,7 +111,7 @@ func (b *Scanner) Print() error {
 	if b.report == nil {
 		return fmt.Errorf("No report found")
 	}
-	if b.config.DependenciesScan != b.config.DependenciesScan {
+	if b.config.DependenciesScan {
 
 		// Print out devReport
 		for i, result := range b.report.DepReport.Results {
@@ -132,7 +132,7 @@ func (b *Scanner) Print() error {
 			}
 		}
 	}
-	if b.config.CodeScan != b.config.CodeScan {
+	if b.config.CodeScan {
 		if len(b.report.CodeReport.Methods) > 0 || len(b.report.CodeReport.CORS) > 0 || len(b.report.CodeReport.RCE) > 0 ||
 			len(b.report.CodeReport.ApiKey) > 0 || len(b.report.CodeReport.CoomentsSecrets) > 0 {
 			logrus.Println("Methods ", b.report.CodeReport.Methods)
