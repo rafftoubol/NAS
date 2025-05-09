@@ -25,8 +25,8 @@ import (
 type Config struct {
 	ProjectPath      string `mapstructure:"projectPath" validate:"required,url|dir"`
 	OutputPath       string `mapstructure:"outputPath" validate:"omitempty,filepath"`
-	CodeScan         *bool  `mapstructure:"codeScan" validate:"omitempty,boolean"`
-	DependenciesScan *bool  `mapstructure:"dependenciesScan" validate:"omitempty,boolean"`
+	CodeScan         bool   `mapstructure:"codeScan" validate:"omitempty,boolean"`
+	DependenciesScan bool   `mapstructure:"dependenciesScan" validate:"omitempty,boolean"`
 }
 
 func LoadConfigFile(configPath string) (*Config, error) {
@@ -60,15 +60,15 @@ func LoadConfigFile(configPath string) (*Config, error) {
 func (c *Config) LoadConfigRepo() error {
 	// Parse the config value to get the repo
 	// Pre : POINTER to a loaded and validated config struct
-	// Post : config.ProjectPath will contain the new path of the project. Return an error if appears.
+	// Post : config.WithProjectPath will contain the new path of the project. Return an error if appears.
 
 	validate := validator.New(validator.WithRequiredStructEnabled())
 
-	if err := validate.Var(c.ProjectPath, "required,dir"); err != nil {
+	if err := validate.Var(c.WithProjectPath, "required,dir"); err != nil {
 		// If it's remote repository => clone the remote repository inside ./tmp
 		// Else do nothing
 
-		logrus.Infof("Cloning remote repository %s", c.ProjectPath)
+		logrus.Infof("Cloning remote repository %s", c.WithProjectPath)
 
 		destPath := path.Join("./tmp", strings.TrimSuffix(path.Base(c.ProjectPath), ".git")) // Get the name of the repository from the URL.
 		if _, err := git.PlainClone(destPath, false, &git.CloneOptions{

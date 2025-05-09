@@ -1,96 +1,44 @@
 package config
 
-// ConfigBuilder We need to be able to specify default config values easily,
-type ConfigBuilder struct {
-	config *Config
-}
-
 /*
-NewConfigBuilder This struct takes an input of a config and returns a pointer to a Config struct
-*/
-func NewConfigBuilder() *ConfigBuilder {
-	return &ConfigBuilder{
-		config: &Config{
-			OutputPath:       "",
-			CodeScan:         nil,
-			DependenciesScan: nil,
-			//whatever other default values you want to set
-		},
-	}
-}
-
-/*
-Each of these functions are used to set the default values of the config struct
-Preconditions:
-  - The ConfigBuilder struct is initialized
-    The function takes a string as an argument,
-    which is the name of the field to set the default value for
-
-Postconditions:
-  - The ConfigBuilder struct is updated with the default values
-    The function returns a pointer to the ConfigBuilder struct
+File purpose: The purpose of this file is to provide methods for setting the config struct appropriately depending
+on the cli options chosen when we dont have a config file. With config file viper handles this, so with cli we must
+do so manually.
 
 Usage:
-1. Inside the function your calling, inside where you call your config you specify Def...(CLI ARG OR Concrete value)
-2. then you use withdefaults() which sets any configs not specified to false.
-3. Build()
-
-e.g.
-
-	config, _ := config.NewConfigBuilder().
-		DefProjectPath(args[0]).
-		DefCodeScan(true).
-		WithDefaults().
-		Build()
-
-To be honest I just realised a cleaner way to do this, next week I will refactor again because its not so important
+config := NewConfig().
+    WithProjectPath(args[0]).
+    WithCodeScan(true)
 */
-func (b *ConfigBuilder) DefProjectPath(projectPath string) *ConfigBuilder {
-	b.config.ProjectPath = projectPath
-	return b
-}
 
-func (b *ConfigBuilder) DefOutputPath(outputPath string) *ConfigBuilder {
-	b.config.OutputPath = outputPath
-	return b
-}
-
-func (b *ConfigBuilder) DefCodeScan(codeScan bool) *ConfigBuilder {
-	b.config.CodeScan = &codeScan
-	/* Debug Printing leaving it incase I need it again
-	fmt.Println("b.config.codeScan", b.config.CodeScan)
-	fmt.Println("ApiImTrue")
-	*/
-	return b
-}
-
-func (b *ConfigBuilder) DefDependenciesScan(dependenciesScan bool) *ConfigBuilder {
-	b.config.DependenciesScan = &dependenciesScan
-	/* Debug Printing leaving it incase I need it again
-	fmt.Println("b.config.depScan", b.config.DependenciesScan)
-	fmt.Println("DepImTrue")
-	*/
-	return b
-
-}
-
-//Add more methods here as we add more config options
-
-func (b *ConfigBuilder) WithDefaults() *ConfigBuilder {
-	if b.config.OutputPath == "" {
-		b.config.OutputPath = "."
+/*
+NewConfig This struct takes an input of a config and returns a pointer to a Config struct
+*/
+func NewConfig() *Config {
+	return &Config{
+		OutputPath:       ".",
+		CodeScan:         false,
+		DependenciesScan: false,
 	}
-	if b.config.CodeScan == nil {
-		defaultValue := false
-		b.config.CodeScan = &defaultValue
-	}
-	if b.config.DependenciesScan == nil {
-		defaultValue := false
-		b.config.DependenciesScan = &defaultValue
-	}
-	return b
 }
 
-func (b *ConfigBuilder) Build() (*Config, error) {
-	return b.config, nil
+func (c *Config) WithProjectPath(path string) *Config {
+	c.ProjectPath = path
+	return c
+}
+
+func (c *Config) WithOutputPath(path string) *Config {
+	c.OutputPath = path
+	return c
+}
+
+func (c *Config) WithCodeScan(enabled bool) *Config {
+	c.CodeScan = enabled
+	return c
+}
+
+func (c *Config) WithDependenciesScan(enabled bool) *Config {
+	c.DependenciesScan = enabled
+	return c
+
 }

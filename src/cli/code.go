@@ -26,12 +26,10 @@ var codeCmd = &cobra.Command{
 
 		}
 		// Create a config from the argument
-		cfg, _ := config.NewConfigBuilder().
-			DefProjectPath(args[0]).
-			DefCodeScan(true).
-			DefOutputPath(OutputPath).
-			WithDefaults().
-			Build()
+		cfg := config.NewConfig().
+			WithProjectPath(args[0]).
+			WithCodeScan(true).
+			WithOutputPath(OutputPath)
 		// Validation of the config
 		if err := cfg.Validate(); err != nil {
 			logrus.Fatalln(err)
