@@ -20,11 +20,9 @@ import (
 var codeCmd = &cobra.Command{
 	Use:   "code [project_path]",
 	Short: "Discovers API routes in the Next.js project",
+	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) < 1 {
-			logrus.Fatalln("Missing project path argument. Please provide the project path as an argument.")
 
-		}
 		// Create a config from the argument
 		cfg := config.NewConfig().
 			WithProjectPath(args[0]).

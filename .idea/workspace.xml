@@ -5,14 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="e560f0ce-4b44-4354-a470-698f5be3dc05" name="Changes" comment="adding methods for default config builder">
-      <change afterPath="$PROJECT_DIR$/config.yaml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/cli/dependencies.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/cli/full.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/cli/root.go" beforeDir="false" afterPath="$PROJECT_DIR$/src/cli/root.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/scanner/scanner.go" beforeDir="false" afterPath="$PROJECT_DIR$/src/scanner/scanner.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/cacheChecker.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/config/config.go" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/config/config.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/cli/code.go" beforeDir="false" afterPath="$PROJECT_DIR$/src/cli/code.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
