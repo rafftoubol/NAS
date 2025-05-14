@@ -19,6 +19,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 )
 
 // OSVQuery Struct for specifying a package in the API
@@ -36,8 +37,9 @@ type OSVBatchRequest struct {
 }
 
 type Vuln struct {
-	ID       string `json:"id"`
-	Modified string `json:"modified"`
+	ID       string          `json:"id"`
+	Modified string          `json:"modified"`
+	Details  json.RawMessage `json:"details,omitempty"`
 }
 
 type Result struct {
@@ -62,7 +64,7 @@ func DepScanner(dependenciesMap map[string]string) (*Response, error) {
 		return nil, err
 	}
 
-	resBody, err := OSVRequestHandler(queries)
+	resBody, err := OSVIDFetcher(queries)
 	if err != nil {
 		return nil, err
 	}
@@ -79,6 +81,14 @@ func DepScanner(dependenciesMap map[string]string) (*Response, error) {
 	err = json.Indent(&prettyJSON, resBody, "", "  ")
 	if err != nil {
 		return nil, fmt.Errorf("Error formatting JSON: %w ", err)
+	}
+
+	// Call OSVDetailFetcher to fetch details for the vulnerabilities
+	_, err = OSVDetailFetcher(&depReport) // We discard the returned []byte for simplicity as per the request
+	if err != nil {
+		fmt.Printf("Error fetching vulnerability details: %v\n", err) // Or handle the error as needed
+		// Depending on your error handling strategy, you might want to return the error here.
+		// For the bare minimum, we'll just print it.
 	}
 
 	return &depReport, nil
@@ -115,13 +125,13 @@ func DependencyMapper(dependencies map[string]string) []OSVQuery {
 }
 
 /*
-OSVRequestHandler this functions purpose is to make batch requests to the OSV API, determining vulnerabilities,
+OSVIDFetcher this functions purpose is to make batch requests to the OSV API, determining vulnerabilities,
 returning JSON of CVSS
 
 PRE: already shaped OSVQueries from the dependency Mapper
 POST: Either the JSON Response as bytes or an error
 */
-func OSVRequestHandler(queries []OSVQuery) ([]byte, error) {
+func OSVIDFetcher(queries []OSVQuery) ([]byte, error) {
 	OSVRequest := OSVBatchRequest{
 		Queries: queries,
 	}
@@ -155,6 +165,65 @@ func OSVRequestHandler(queries []OSVQuery) ([]byte, error) {
 	}
 
 	return body, nil
+}
+
+/*
+OSVDetailFetcher A function to take the vulnerability ID's and loop through fetching the details
+*/
+func OSVDetailFetcher(response *Response) ([]byte, error) {
+	client := &http.Client{
+		Timeout: time.Second * 10,
+	}
+
+	var allDetails []json.RawMessage // To store the details fetched for all vuln IDs
+
+	// Iterate through each Result in the response
+	for _, result := range response.Results {
+		// Iterate through each Vuln in the current Result
+		for _, vuln := range result.Vulns {
+			// Create URL with the vulnerability ID
+			url := fmt.Sprintf("https://api.osv.dev/v1/vulns/%s", vuln.ID)
+			fmt.Println("Fetching details for:", vuln.ID) // For debugging
+
+			req, err := http.NewRequest("GET", url, nil)
+			if err != nil {
+				return nil, fmt.Errorf("error creating request for %s: %w", vuln.ID, err)
+			}
+
+			resp, err := client.Do(req)
+			if err != nil {
+				return nil, fmt.Errorf("error fetching details for %s: %w", vuln.ID, err)
+			}
+			defer resp.Body.Close()
+
+			if resp.StatusCode != http.StatusOK {
+				return nil, fmt.Errorf("unexpected status code %d for %s", resp.StatusCode, vuln.ID)
+			}
+
+			var detailResponse map[string]interface{} // Or a more specific struct if you know the detail structure
+			err = json.NewDecoder(resp.Body).Decode(&detailResponse)
+			if err != nil {
+				return nil, fmt.Errorf("error decoding response for %s: %w", vuln.ID, err)
+			}
+
+			// Assuming the API returns a single JSON object with details
+			detailBytes, err := json.Marshal(detailResponse)
+			if err != nil {
+				return nil, fmt.Errorf("error marshaling details for %s: %w", vuln.ID, err)
+			}
+			allDetails = append(allDetails, detailBytes)
+		}
+	}
+
+	// You might want to return all the fetched details in a single JSON array
+	finalResponse, err := json.Marshal(allDetails)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling final response: %w", err)
+	}
+
+	fmt.Println("Fetched details for:", string(finalResponse))
+
+	return finalResponse, nil
 }
 
 /*
