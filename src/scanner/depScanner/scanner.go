@@ -154,7 +154,7 @@ func OSVIDFetcher(queries []OSVQuery) ([]byte, error) {
 		return nil, fmt.Errorf("Error making request: %w ", err)
 	}
 	defer func(Body io.ReadCloser) {
-		err = Body.Close()
+		err := Body.Close()
 		if err != nil {
 			logrus.Errorln("Error reading response: ", err)
 		}
