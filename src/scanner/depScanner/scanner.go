@@ -176,6 +176,10 @@ OSVDetailFetcher A function to take the vulnerability ID's and loop through
 fetching the details, the intended use case in this application is to take a
 pointer to a response object and then update that response object inside the
 caller function, that's why we don't explicitly have a return other than error
+
+We also do the http fetching in a seperate function to the for loop that way we
+do not defer resp.body.close() inside the for loop leaving every single response
+body.io open till the for loop executes...
 */
 func OSVDetailFetcher(response *Response) error {
 	client := &http.Client{
