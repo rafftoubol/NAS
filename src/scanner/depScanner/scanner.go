@@ -1,6 +1,7 @@
 /*
-The purpose of this file is to reshape next.dependencies, and next.devDependencies into a OSV-DepScanner payload so that
-we can simply curl a batch of packages and versions, receive the response as json
+The purpose of this file is to reshape next.dependencies, and
+next.devDependencies into the OSV-DepScanner payload so that we can simply curl a
+batch of packages and versions, receive the response as json
 
 PRE: Defined and filled Next struct (next)
 POST: Struct with vulnerabilities
@@ -37,9 +38,11 @@ type OSVBatchRequest struct {
 }
 
 type Vuln struct {
-	ID       string          `json:"id"`
-	Modified string          `json:"modified"`
-	Details  json.RawMessage `json:"details,omitempty"`
+	ID       string   `json:"id"`
+	Aliases  []string `json:"aliases"`
+	Modified string   `json:"modified"`
+	Details  string   `json:"details,omitempty"`
+	Summary  string   `json:"summary,omitempty"`
 }
 
 type Result struct {
@@ -51,8 +54,9 @@ type Response struct {
 }
 
 /*
-DepScanner this function forms the dependencies and makes the request to the OSV API,
-when we have more scan function we can rename this to dependency scanner, and wrap it in another func - scanner again
+DepScanner this function forms the dependencies and makes the request to the OSV
+API, when we have more scan function we can rename this to dependency scanner,
+and wrap it in another func - scanner again
 */
 func DepScanner(dependenciesMap map[string]string) (*Response, error) {
 	//dependenciesMap := utils.GlobalNext.Dependencies
@@ -84,9 +88,9 @@ func DepScanner(dependenciesMap map[string]string) (*Response, error) {
 	}
 
 	// Call OSVDetailFetcher to fetch details for the vulnerabilities
-	_, err = OSVDetailFetcher(&depReport) // We discard the returned []byte for simplicity as per the request
+	err = OSVDetailFetcher(&depReport) // We discard the returned []byte for simplicity as per the request
 	if err != nil {
-		fmt.Printf("Error fetching vulnerability details: %v\n", err) // Or handle the error as needed
+		logrus.Errorf("Error fetching vulnerability details: %v\n", err) // Or handle the error as needed
 		// Depending on your error handling strategy, you might want to return the error here.
 		// For the bare minimum, we'll just print it.
 	}
@@ -125,8 +129,8 @@ func DependencyMapper(dependencies map[string]string) []OSVQuery {
 }
 
 /*
-OSVIDFetcher this functions purpose is to make batch requests to the OSV API, determining vulnerabilities,
-returning JSON of CVSS
+OSVIDFetcher this functions purpose is to make batch requests to the OSV API,
+determining vulnerabilities, returning JSON of CVSS
 
 PRE: already shaped OSVQueries from the dependency Mapper
 POST: Either the JSON Response as bytes or an error
@@ -152,7 +156,7 @@ func OSVIDFetcher(queries []OSVQuery) ([]byte, error) {
 		return nil, fmt.Errorf("Error making request: %w ", err)
 	}
 	defer func(Body io.ReadCloser) {
-		err := Body.Close()
+		err = Body.Close()
 		if err != nil {
 			logrus.Errorln("Error reading response: ", err)
 		}
@@ -168,62 +172,111 @@ func OSVIDFetcher(queries []OSVQuery) ([]byte, error) {
 }
 
 /*
-OSVDetailFetcher A function to take the vulnerability ID's and loop through fetching the details
+OSVDetailFetcher A function to take the vulnerability ID's and loop through
+fetching the details, the intended use case in this application is to take a
+pointer to a response object and then update that response object inside the
+caller function, that's why we don't explicitly have a return other than error
 */
-func OSVDetailFetcher(response *Response) ([]byte, error) {
+func OSVDetailFetcher(response *Response) error {
 	client := &http.Client{
 		Timeout: time.Second * 10,
 	}
 
-	var allDetails []json.RawMessage // To store the details fetched for all vuln IDs
-
 	// Iterate through each Result in the response
-	for _, result := range response.Results {
+	for i := range response.Results {
 		// Iterate through each Vuln in the current Result
-		for _, vuln := range result.Vulns {
-			// Create URL with the vulnerability ID
-			url := fmt.Sprintf("https://api.osv.dev/v1/vulns/%s", vuln.ID)
-			fmt.Println("Fetching details for:", vuln.ID) // For debugging
+		for j := range response.Results[i].Vulns {
+			// Get a reference to the current Vuln to modify it
+			vuln := &response.Results[i].Vulns[j]
 
-			req, err := http.NewRequest("GET", url, nil)
+			// Fetch and assign the details to this specific vulnerability
+			err := fetchAndAssignVulnDetail(client, vuln)
 			if err != nil {
-				return nil, fmt.Errorf("error creating request for %s: %w", vuln.ID, err)
+				return err
 			}
-
-			resp, err := client.Do(req)
-			if err != nil {
-				return nil, fmt.Errorf("error fetching details for %s: %w", vuln.ID, err)
-			}
-			defer resp.Body.Close()
-
-			if resp.StatusCode != http.StatusOK {
-				return nil, fmt.Errorf("unexpected status code %d for %s", resp.StatusCode, vuln.ID)
-			}
-
-			var detailResponse map[string]interface{} // Or a more specific struct if you know the detail structure
-			err = json.NewDecoder(resp.Body).Decode(&detailResponse)
-			if err != nil {
-				return nil, fmt.Errorf("error decoding response for %s: %w", vuln.ID, err)
-			}
-
-			// Assuming the API returns a single JSON object with details
-			detailBytes, err := json.Marshal(detailResponse)
-			if err != nil {
-				return nil, fmt.Errorf("error marshaling details for %s: %w", vuln.ID, err)
-			}
-			allDetails = append(allDetails, detailBytes)
 		}
 	}
 
-	// You might want to return all the fetched details in a single JSON array
-	finalResponse, err := json.Marshal(allDetails)
+	return nil
+}
+
+/*
+fetchAndAssignVulnDetail This Function basically handles a single http clients
+rest query for a single vulnerability. we then take that response map it to a
+temporary array and then into our vuln struct, we do this in its own function so
+that we can close the response body at the end of its usage.
+*/
+
+func fetchAndAssignVulnDetail(client *http.Client, vuln *Vuln) error {
+	// Create URL with the vulnerability ID
+	url := fmt.Sprintf("https://api.osv.dev/v1/vulns/%s", vuln.ID)
+	//fmt.Println("Fetching details for:", vuln.ID) // For debugging
+
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return nil, fmt.Errorf("error marshaling final response: %w", err)
+		return err
 	}
 
-	fmt.Println("Fetched details for:", string(finalResponse))
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			logrus.Errorf("Error closing response: %v", err)
+		}
+	}(resp.Body)
 
-	return finalResponse, nil
+	if resp.StatusCode != http.StatusOK {
+		return err
+	}
+
+	// Use a map to decode the JSON response
+	var detailMap map[string]interface{}
+	err = json.NewDecoder(resp.Body).Decode(&detailMap)
+	if err != nil {
+		return err
+	}
+
+	// Extract fields directly from the map
+	if summary, ok := detailMap["summary"].(string); ok {
+		vuln.Summary = summary
+	}
+
+	if details, ok := detailMap["details"].(string); ok {
+		vuln.Details = details
+	}
+
+	// Extract aliases
+	var combinedAliases []string
+
+	// Get the original aliases
+	if aliases, ok := detailMap["aliases"].([]interface{}); ok {
+		for _, alias := range aliases {
+			if aliasStr, ok := alias.(string); ok {
+				combinedAliases = append(combinedAliases, aliasStr)
+			}
+		}
+	}
+
+	// Get CWE IDs from database_specific
+	if dbSpecific, ok := detailMap["database_specific"].(map[string]interface{}); ok {
+		if cweIDs, ok := dbSpecific["cwe_ids"].([]interface{}); ok {
+			for _, cweID := range cweIDs {
+				if cweIDStr, ok := cweID.(string); ok {
+					combinedAliases = append(combinedAliases, cweIDStr)
+				}
+			}
+		}
+	}
+
+	// Only update the aliases if we found some
+	if len(combinedAliases) > 0 {
+		vuln.Aliases = combinedAliases
+	}
+
+	return nil
 }
 
 /*
@@ -247,8 +300,5 @@ func prettyPrintRequest(queries []OSVQuery) error {
 	if err != nil {
 		return fmt.Errorf("Error formatting JSON: %w ", err)
 	}
-
-	//logrus.Infof("OSV API Request Payload: %v", prettyJSON.String())
-
 	return nil
 }
