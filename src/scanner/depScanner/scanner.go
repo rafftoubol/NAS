@@ -88,11 +88,9 @@ func DepScanner(dependenciesMap map[string]string) (*Response, error) {
 	}
 
 	// Call OSVDetailFetcher to fetch details for the vulnerabilities
-	err = OSVDetailFetcher(&depReport) // We discard the returned []byte for simplicity as per the request
+	err = OSVDetailFetcher(&depReport) 
 	if err != nil {
-		logrus.Errorf("Error fetching vulnerability details: %v\n", err) // Or handle the error as needed
-		// Depending on your error handling strategy, you might want to return the error here.
-		// For the bare minimum, we'll just print it.
+		logrus.Errorf("Error fetching vulnerability details: %v\n", err)
 	}
 
 	return &depReport, nil
