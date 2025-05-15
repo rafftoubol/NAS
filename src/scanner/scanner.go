@@ -117,7 +117,7 @@ func (b *Scanner) Print() error {
 		if len(result.Vulns) > 0 {
 			logrus.Infof("Package %d found with %d vulnerabilitys:", i, len(result.Vulns))
 			for _, vuln := range result.Vulns {
-				logrus.Infof("- ID: %s, Modified: %s", vuln.ID, vuln.Modified)
+				logrus.Infof("- ID: %s, Summary: %s", vuln.ID, vuln.Summary)
 			}
 		}
 	}
