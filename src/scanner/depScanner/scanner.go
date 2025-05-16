@@ -160,7 +160,6 @@ func OSVIDFetcher(queries []OSVQuery) ([]byte, error) {
 			logrus.Errorln("Error reading response: ", err)
 		}
 	}(resp.Body)
-
 	// Read the response
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

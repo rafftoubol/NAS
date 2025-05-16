@@ -7,6 +7,7 @@ import (
 	"github.com/johnfercher/maroto/pkg/consts"
 	"github.com/johnfercher/maroto/pkg/pdf"
 	"github.com/johnfercher/maroto/pkg/props"
+	"github.com/sirupsen/logrus"
 )
 
 type Report struct {
@@ -18,7 +19,8 @@ type Report struct {
 // TODO: Expand with all data
 // Just for the POC.
 func GeneratePDF(r *Report, outputPath string) error {
-	// Avoid passing the scanner.Report because it will cause a cyclic include.
+	logrus.Debug("Generating Report")
+
 	m := pdf.NewMaroto(consts.Portrait, consts.A4)
 	m.SetPageMargins(10, 10, 10)
 

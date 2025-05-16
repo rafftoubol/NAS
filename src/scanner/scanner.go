@@ -14,7 +14,9 @@ import (
 	"attack-surface/src/utils/config"
 	"attack-surface/src/utils/report"
 	"fmt"
+	"github.com/fatih/color"
 	"github.com/sirupsen/logrus"
+	"strings"
 )
 
 type Scanner struct {
@@ -44,19 +46,19 @@ func (b *Scanner) Scan() error {
 
 		// Parse Next.js -> Validate if is a Next.js Repository
 		next, err := utils.InitNext(b.config.ProjectPath)
-
-		logrus.Info("Scanning Dependencies")
 		if err != nil {
 			return err
 		}
-		// Scan Dependencies
+
+		// Run scanner Dependencies
+		logrus.Infof("%s ", color.New(color.FgCyan, color.Bold).Sprint("Scanning Dependencies"))
 		depReport, err := depScanner.DepScanner(next.Dependencies)
 		if err != nil {
 			return err
 		}
 
-		logrus.Info("Scanning devDependencies")
-		// Scan DevDependencies
+		// Run scanner DevDependencies
+		logrus.Infof("%s ", color.New(color.FgCyan, color.Bold).Sprint("Scanning devDependencies"))
 		depDevReport, err := depScanner.DepScanner(next.DevDependencies)
 
 		if err != nil {
@@ -74,7 +76,8 @@ func (b *Scanner) Scan() error {
 	}
 
 	if b.config.CodeScan {
-		logrus.Info("Scanning Code")
+		logrus.Infof("%s ", color.New(color.FgCyan, color.Bold).Sprint("Scanning Code"))
+
 		// Run scanner code
 		codeReport, err := codeScanner.CodeScanner(b.config.ProjectPath)
 		if err != nil {
@@ -83,23 +86,29 @@ func (b *Scanner) Scan() error {
 
 		b.report.CodeReport = codeReport
 
+		// Draft, change how we check if is empty
+		if len(b.report.CodeReport.Methods) == 0 || len(b.report.CodeReport.CORS) == 0 || len(b.report.CodeReport.RCE) == 0 ||
+			len(b.report.CodeReport.ApiKey) == 0 || len(b.report.CodeReport.CoomentsSecrets) == 0 {
+			logrus.Info("Code Scan found no Vulnerabilities")
+		}
 	} else {
-		logrus.Info("Code Scan is Skipped (Disabled)")
+		logrus.Infoln("Code Scan is Skipped (Disabled)")
 	}
 
-	logrus.Infoln("Scan Successful")
-	logrus.Debug("Generating Report")
+	logrus.Infoln("Scan terminated successfully")
+
 	if err := b.Print(); err != nil {
 		return err
 	}
-	logrus.Infoln("Report generated successfully in ", b.config.OutputPath)
+	logrus.Infoln("Report generated successfully in", b.config.OutputPath)
 
 	return nil
 }
 
+// POC Function to print the report.
 func (b *Scanner) Print() error {
-	// Temporary -> Logic to print file will be here.
-	// Now just print out Vuln found
+	logrus.Infof("%s", color.New(color.FgMagenta, color.Bold).Sprint("Vulnerability Report "))
+
 	if b.report == nil {
 		return fmt.Errorf("No report found")
 	}
@@ -109,7 +118,7 @@ func (b *Scanner) Print() error {
 		if len(result.Vulns) > 0 {
 			logrus.Infof("Package %d found with %d vulnerabilitys:", i, len(result.Vulns))
 			for _, vuln := range result.Vulns {
-				logrus.Infof("- ID: %s, Summary: %s", vuln.Aliases, vuln.Summary)
+				logrus.Infof("- ID: %-35s   %s", strings.Join(vuln.Aliases, " "), vuln.Summary)
 			}
 		}
 	}
@@ -118,11 +127,12 @@ func (b *Scanner) Print() error {
 		if len(result.Vulns) > 0 {
 			logrus.Infof("Package %d found with %d vulnerabilitys:", i, len(result.Vulns))
 			for _, vuln := range result.Vulns {
-				logrus.Infof("- ID: %s, Modified: %s", vuln.Aliases, vuln.Summary)
+				logrus.Infof("- ID: %-35s   %s", strings.Join(vuln.Aliases, " "), vuln.Summary)
 			}
 		}
 	}
 
+	// Draft, change how we check if is empty and how we print it.
 	if len(b.report.CodeReport.Methods) > 0 || len(b.report.CodeReport.CORS) > 0 || len(b.report.CodeReport.RCE) > 0 ||
 		len(b.report.CodeReport.ApiKey) > 0 || len(b.report.CodeReport.CoomentsSecrets) > 0 {
 		logrus.Println("Methods ", b.report.CodeReport.Methods)
