@@ -11,8 +11,8 @@ import (
 
 type Report struct {
 	CodeReport   *codeScanner.CodeScanReport
-	DepReport    *depScanner.Response // Temporary -> Would Become Vuln
-	DepDevReport *depScanner.Response // Temporary -> Would Become Vuln
+	DepReport    *depScanner.Response
+	DepDevReport *depScanner.Response
 }
 
 // TODO: Expand with all data

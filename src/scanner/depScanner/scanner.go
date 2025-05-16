@@ -16,6 +16,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/schollz/progressbar/v3"
 	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
@@ -88,7 +89,7 @@ func DepScanner(dependenciesMap map[string]string) (*Response, error) {
 	}
 
 	// Call OSVDetailFetcher to fetch details for the vulnerabilities
-	err = OSVDetailFetcher(&depReport) 
+	err = OSVDetailFetcher(&depReport)
 	if err != nil {
 		logrus.Errorf("Error fetching vulnerability details: %v\n", err)
 	}
@@ -183,6 +184,34 @@ func OSVDetailFetcher(response *Response) error {
 	client := &http.Client{
 		Timeout: time.Second * 10,
 	}
+	// Get the number of packages and vulnerabilities
+	vulnCount := 0
+	vulnPkgCount := 0
+	for _, result := range response.Results {
+		if len(result.Vulns) > 0 {
+			vulnPkgCount++
+			vulnCount += len(result.Vulns)
+		}
+	}
+	logrus.Infof("Packages analyzed:      %d", len(response.Results))
+	logrus.Infof("Vulnerable packages:    %d", vulnPkgCount)
+	logrus.Infof("Total vulnerabilities:  %d", vulnCount)
+
+	if vulnCount == 0 {
+		return nil
+	}
+
+	bar := progressbar.NewOptions(vulnCount,
+		progressbar.OptionSetDescription("Fetching vuln details..."),
+		progressbar.OptionShowCount(),
+		progressbar.OptionSetWidth(40),
+		progressbar.OptionSetPredictTime(false),
+		progressbar.OptionSetTheme(progressbar.Theme{
+			Saucer:        "=",
+			SaucerPadding: " ",
+			BarStart:      "[",
+			BarEnd:        "]",
+		}))
 
 	// Iterate through each Result in the response
 	for i := range response.Results {
@@ -196,9 +225,12 @@ func OSVDetailFetcher(response *Response) error {
 			if err != nil {
 				return err
 			}
+			bar.Add(1)
 		}
 	}
 
+	bar.Finish()
+	fmt.Println()
 	return nil
 }
 

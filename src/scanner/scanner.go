@@ -29,7 +29,7 @@ func NewScanner(config *config.Config) *Scanner {
 }
 
 func (b *Scanner) Scan() error {
-	// To prevent segmentation fault we can create empyt block
+	// To prevent segmentation fault
 	b.report = &report.Report{
 		CodeReport:   &codeScanner.CodeScanReport{},
 		DepReport:    &depScanner.Response{},
@@ -41,23 +41,21 @@ func (b *Scanner) Scan() error {
 
 	// Expand with future cong Options
 	if b.config.DependenciesScan {
-		logrus.Info("Scanning Dependencies")
 
 		// Parse Next.js -> Validate if is a Next.js Repository
 		next, err := utils.InitNext(b.config.ProjectPath)
+
+		logrus.Info("Scanning Dependencies")
 		if err != nil {
 			return err
 		}
 		// Scan Dependencies
 		depReport, err := depScanner.DepScanner(next.Dependencies)
-
 		if err != nil {
 			return err
 		}
 
-		if b.report == nil {
-			b.report = &report.Report{}
-		}
+		logrus.Info("Scanning devDependencies")
 		// Scan DevDependencies
 		depDevReport, err := depScanner.DepScanner(next.DevDependencies)
 
@@ -68,8 +66,6 @@ func (b *Scanner) Scan() error {
 		if b.report == nil {
 			b.report = &report.Report{}
 		}
-		logrus.Debug("Dependency Scan Results: ", depReport)
-		logrus.Debug("DevDependency Scan Results: ", depDevReport)
 		b.report.DepReport = depReport
 		b.report.DepDevReport = depDevReport
 
@@ -85,11 +81,6 @@ func (b *Scanner) Scan() error {
 			return err
 		}
 
-		// Check if b.report has been created
-		if b.report == nil {
-			b.report = &report.Report{}
-		}
-		logrus.Debugf("Code Scan Results: %v", codeReport)
 		b.report.CodeReport = codeReport
 
 	} else {
@@ -101,7 +92,8 @@ func (b *Scanner) Scan() error {
 	if err := b.Print(); err != nil {
 		return err
 	}
-	logrus.Infoln("Report Generated")
+	logrus.Infoln("Report generated successfully in ", b.config.OutputPath)
+
 	return nil
 }
 
@@ -117,7 +109,7 @@ func (b *Scanner) Print() error {
 		if len(result.Vulns) > 0 {
 			logrus.Infof("Package %d found with %d vulnerabilitys:", i, len(result.Vulns))
 			for _, vuln := range result.Vulns {
-				logrus.Infof("- ID: %s, Summary: %s", vuln.ID, vuln.Summary)
+				logrus.Infof("- ID: %s, Summary: %s", vuln.Aliases, vuln.Summary)
 			}
 		}
 	}
@@ -126,7 +118,7 @@ func (b *Scanner) Print() error {
 		if len(result.Vulns) > 0 {
 			logrus.Infof("Package %d found with %d vulnerabilitys:", i, len(result.Vulns))
 			for _, vuln := range result.Vulns {
-				logrus.Infof("- ID: %s, Modified: %s", vuln.ID, vuln.Modified)
+				logrus.Infof("- ID: %s, Modified: %s", vuln.Aliases, vuln.Summary)
 			}
 		}
 	}
@@ -138,8 +130,6 @@ func (b *Scanner) Print() error {
 		logrus.Println("RCE ", b.report.CodeReport.RCE)
 		logrus.Println("ApiKey ", b.report.CodeReport.ApiKey)
 		logrus.Println("CoomentsSecrets ", b.report.CodeReport.CoomentsSecrets)
-	} else {
-		logrus.Println("Code Scan: No vulnerabilities found")
 	}
 
 	// Here put report logic
@@ -147,6 +137,4 @@ func (b *Scanner) Print() error {
 	// This control that we have this
 
 	return report.GeneratePDF(b.report, b.config.OutputPath)
-
-	return nil
 }
