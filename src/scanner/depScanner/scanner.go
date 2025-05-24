@@ -47,7 +47,8 @@ type Vuln struct {
 }
 
 type Result struct {
-	Vulns []Vuln `json:"vulns,omitempty"`
+	Vulns       []Vuln `json:"vulns,omitempty"`
+	PackageName string `json:"package_name,omitempty"`
 }
 
 type Response struct {
@@ -79,6 +80,12 @@ func DepScanner(dependenciesMap map[string]string) (*Response, error) {
 	err = json.Unmarshal(resBody, &depReport)
 	if err != nil {
 		return nil, fmt.Errorf("errore nel parsing JSON: %w", err)
+	}
+
+	for i, query := range queries {
+		if i < len(depReport.Results) {
+			depReport.Results[i].PackageName = query.Package.Name
+		}
 	}
 
 	// Format and print JSON response
@@ -192,6 +199,7 @@ func OSVDetailFetcher(response *Response) error {
 			vulnCount += len(result.Vulns)
 		}
 	}
+	fmt.Println(response.Results)
 	logrus.Infof("Packages analyzed:      %d", len(response.Results))
 	logrus.Infof("Vulnerable packages:    %d", vulnPkgCount)
 	logrus.Infof("Total vulnerabilities:  %d", vulnCount)
@@ -218,7 +226,6 @@ func OSVDetailFetcher(response *Response) error {
 		for j := range response.Results[i].Vulns {
 			// Get a reference to the current Vuln to modify it
 			vuln := &response.Results[i].Vulns[j]
-
 			// Fetch and assign the details to this specific vulnerability
 			err := fetchAndAssignVulnDetail(client, vuln)
 			if err != nil {

@@ -22,12 +22,21 @@ import (
 type Scanner struct {
 	config *config.Config
 	report *report.Report
+	next   *utils.Next
 }
 
-func NewScanner(config *config.Config) *Scanner {
+func NewScanner(config *config.Config) (*Scanner, error) {
+	// Parse Next.js -> Validate if is a Next.js Repository
+
+	next, err := utils.InitNext(config.ProjectPath)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Scanner{
 		config: config,
-	}
+		next:   next,
+	}, nil
 }
 
 func (b *Scanner) Scan() error {
@@ -44,22 +53,16 @@ func (b *Scanner) Scan() error {
 	// Expand with future cong Options
 	if b.config.DependenciesScan {
 
-		// Parse Next.js -> Validate if is a Next.js Repository
-		next, err := utils.InitNext(b.config.ProjectPath)
-		if err != nil {
-			return err
-		}
-
 		// Run scanner Dependencies
 		logrus.Infof("%s ", color.New(color.FgCyan, color.Bold).Sprint("Scanning Dependencies"))
-		depReport, err := depScanner.DepScanner(next.Dependencies)
+		depReport, err := depScanner.DepScanner(b.next.Dependencies)
 		if err != nil {
 			return err
 		}
 
 		// Run scanner DevDependencies
 		logrus.Infof("%s ", color.New(color.FgCyan, color.Bold).Sprint("Scanning devDependencies"))
-		depDevReport, err := depScanner.DepScanner(next.DevDependencies)
+		depDevReport, err := depScanner.DepScanner(b.next.DevDependencies)
 
 		if err != nil {
 			return err
@@ -109,16 +112,18 @@ func (b *Scanner) Scan() error {
 func (b *Scanner) Print() error {
 	logrus.Infof("%s", color.New(color.FgMagenta, color.Bold).Sprint("Vulnerability Report "))
 
+	//index := b.next.GetIndexDependencies()
+	//fmt.Println(index)
 	if b.report == nil {
 		return fmt.Errorf("No report found")
 	}
 
 	// Print out devReport
-	for i, result := range b.report.DepReport.Results {
+	for _, result := range b.report.DepReport.Results {
 		if len(result.Vulns) > 0 {
-			logrus.Infof("Package %d found with %d vulnerabilitys:", i, len(result.Vulns))
+			logrus.Infof("Package %s found with %d vulnerabilitys:", result.PackageName, len(result.Vulns))
 			for _, vuln := range result.Vulns {
-				logrus.Infof("- ID: %-35s   %s", strings.Join(vuln.Aliases, " "), vuln.Summary)
+				logrus.Debugf("- ID: %-35s   %s", strings.Join(vuln.Aliases, " "), vuln.Summary)
 			}
 		}
 	}
@@ -127,7 +132,7 @@ func (b *Scanner) Print() error {
 		if len(result.Vulns) > 0 {
 			logrus.Infof("Package %d found with %d vulnerabilitys:", i, len(result.Vulns))
 			for _, vuln := range result.Vulns {
-				logrus.Infof("- ID: %-35s   %s", strings.Join(vuln.Aliases, " "), vuln.Summary)
+				logrus.Debugf("- ID: %-35s   %s", strings.Join(vuln.Aliases, " "), vuln.Summary)
 			}
 		}
 	}
@@ -135,11 +140,11 @@ func (b *Scanner) Print() error {
 	// Draft, change how we check if is empty and how we print it.
 	if len(b.report.CodeReport.Methods) > 0 || len(b.report.CodeReport.CORS) > 0 || len(b.report.CodeReport.RCE) > 0 ||
 		len(b.report.CodeReport.ApiKey) > 0 || len(b.report.CodeReport.CoomentsSecrets) > 0 {
-		logrus.Println("Methods ", b.report.CodeReport.Methods)
-		logrus.Println("CORS ", b.report.CodeReport.CORS)
-		logrus.Println("RCE ", b.report.CodeReport.RCE)
-		logrus.Println("ApiKey ", b.report.CodeReport.ApiKey)
-		logrus.Println("CoomentsSecrets ", b.report.CodeReport.CoomentsSecrets)
+		logrus.Infoln("Methods ", b.report.CodeReport.Methods)
+		logrus.Infoln("CORS ", b.report.CodeReport.CORS)
+		logrus.Infoln("RCE ", b.report.CodeReport.RCE)
+		logrus.Infoln("ApiKey ", b.report.CodeReport.ApiKey)
+		logrus.Infoln("CoomentsSecrets ", b.report.CodeReport.CoomentsSecrets)
 	}
 
 	// Here put report logic
