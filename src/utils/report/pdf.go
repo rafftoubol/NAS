@@ -70,7 +70,6 @@ func GeneratePDF(r *Report, outputPath string) error {
 	return m.OutputFileAndClose(outputPath)
 }
 
-// addHeader creates the ASCII art header and title
 func addHeader(m pdf.Maroto) {
 	asciiLines := []string{
 		" ________   ________  ________      ",
@@ -171,7 +170,6 @@ func addExecutiveSummary(m pdf.Maroto, report *Report) {
 	m.Row(8, func() {})
 }
 
-// countVulnerabilities counts vulnerabilities across all scan types
 func countVulnerabilities(report *Report) (int, int, int) {
 	codeVulns := 0
 	depVulns := 0
@@ -198,7 +196,6 @@ func countVulnerabilities(report *Report) (int, int, int) {
 	return codeVulns, depVulns, devDepVulns
 }
 
-// addCodeVulnerabilitySection adds all code-related vulnerabilities in one section
 func addCodeVulnerabilitySection(m pdf.Maroto, codeReport *codeScanner.CodeScanReport) {
 	if codeReport == nil {
 		return
