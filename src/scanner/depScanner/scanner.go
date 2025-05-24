@@ -84,7 +84,7 @@ func DepScanner(dependenciesMap map[string]string) (*Response, error) {
 
 	for i, query := range queries {
 		if i < len(depReport.Results) {
-			depReport.Results[i].PackageName = query.Package.Name
+			depReport.Results[i].PackageName = fmt.Sprintf("%s@%s", query.Package.Name, query.Version)
 		}
 	}
 
@@ -199,7 +199,6 @@ func OSVDetailFetcher(response *Response) error {
 			vulnCount += len(result.Vulns)
 		}
 	}
-	fmt.Println(response.Results)
 	logrus.Infof("Packages analyzed:      %d", len(response.Results))
 	logrus.Infof("Vulnerable packages:    %d", vulnPkgCount)
 	logrus.Infof("Total vulnerabilities:  %d", vulnCount)

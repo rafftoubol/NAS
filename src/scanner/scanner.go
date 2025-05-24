@@ -112,8 +112,6 @@ func (b *Scanner) Scan() error {
 func (b *Scanner) Print() error {
 	logrus.Infof("%s", color.New(color.FgMagenta, color.Bold).Sprint("Vulnerability Report "))
 
-	//index := b.next.GetIndexDependencies()
-	//fmt.Println(index)
 	if b.report == nil {
 		return fmt.Errorf("No report found")
 	}
@@ -121,16 +119,16 @@ func (b *Scanner) Print() error {
 	// Print out devReport
 	for _, result := range b.report.DepReport.Results {
 		if len(result.Vulns) > 0 {
-			logrus.Infof("Package %s found with %d vulnerabilitys:", result.PackageName, len(result.Vulns))
+			logrus.Infof("Package %s found with %d vulnerabilitys", result.PackageName, len(result.Vulns))
 			for _, vuln := range result.Vulns {
 				logrus.Debugf("- ID: %-35s   %s", strings.Join(vuln.Aliases, " "), vuln.Summary)
 			}
 		}
 	}
 	// Print out devDevReport
-	for i, result := range b.report.DepDevReport.Results {
+	for _, result := range b.report.DepDevReport.Results {
 		if len(result.Vulns) > 0 {
-			logrus.Infof("Package %d found with %d vulnerabilitys:", i, len(result.Vulns))
+			logrus.Infof("Package %s found with %d vulnerabilitys", result.PackageName, len(result.Vulns))
 			for _, vuln := range result.Vulns {
 				logrus.Debugf("- ID: %-35s   %s", strings.Join(vuln.Aliases, " "), vuln.Summary)
 			}
