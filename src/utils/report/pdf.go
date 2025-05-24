@@ -274,7 +274,7 @@ func addDependencySection(m pdf.Maroto, depReport *depScanner.Response, sectionT
 		totalVulns += len(result.Vulns)
 	}
 
-	addSectionTitle(m, fmt.Sprintf("Dependencies (%d)", totalVulns))
+	addSectionTitle(m, fmt.Sprintf("%s (%d)", sectionTitle, totalVulns))
 
 	m.Row(4, func() {})
 
@@ -299,7 +299,7 @@ func addDependencyVulnerabilityBlock(m pdf.Maroto, vuln depScanner.Vuln) {
 		})
 		m.Col(4, func() {
 			if len(vuln.Aliases) > 0 {
-				m.Text(fmt.Sprintf("Aliases: %s", strings.Join(vuln.Aliases, ", ")), props.Text{
+				m.Text(fmt.Sprintf("ID: %s", strings.Join(vuln.Aliases, ", ")), props.Text{
 					Style: consts.Italic,
 					Size:  8,
 					Color: getDarkGrayColor(),
