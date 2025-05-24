@@ -137,12 +137,12 @@ func (b *Scanner) Print() error {
 
 	// Draft, change how we check if is empty and how we print it.
 	if len(b.report.CodeReport.Methods) > 0 || len(b.report.CodeReport.CORS) > 0 || len(b.report.CodeReport.RCE) > 0 ||
-		len(b.report.CodeReport.ApiKey) > 0 || len(b.report.CodeReport.CoomentsSecrets) > 0 {
+		len(b.report.CodeReport.ApiKey) > 0 || len(b.report.CodeReport.CommentsSecrets) > 0 {
 		logrus.Infoln("Methods ", b.report.CodeReport.Methods)
 		logrus.Infoln("CORS ", b.report.CodeReport.CORS)
 		logrus.Infoln("RCE ", b.report.CodeReport.RCE)
 		logrus.Infoln("ApiKey ", b.report.CodeReport.ApiKey)
-		logrus.Infoln("CoomentsSecrets ", b.report.CodeReport.CoomentsSecrets)
+		logrus.Infoln("CoomentsSecrets ", b.report.CodeReport.CommentsSecrets)
 	}
 
 	// Here put report logic
