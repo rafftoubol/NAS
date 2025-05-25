@@ -150,5 +150,5 @@ func (b *Scanner) Print() error {
 	// Change in the future
 	// This control that we have this
 
-	return report.GeneratePDF(b.report, b.next, b.config.OutputPath)
+	return report.GeneratePDF(b.report, b.next, b.config)
 }
