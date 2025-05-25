@@ -19,6 +19,12 @@ type Report struct {
 	DepDevReport *depScanner.Response
 }
 
+var (
+	bgLine = 12.0
+	line   = 8.0
+	smLine = 6.0
+)
+
 func GeneratePDF(r *Report, n *utils.Next, outputPath string) error {
 	logrus.Debug("Generating Report")
 
@@ -71,10 +77,17 @@ func GeneratePDF(r *Report, n *utils.Next, outputPath string) error {
 	})
 	pdf.AddPage()
 	heading1("Next.js Project Summary", pdf)
+	pdf.SetY(pdf.GetY() + bgLine)
+	rows := [][]string{
+		{"Project title", n.Name},
+		{"Version", n.Version},
+		{"Description", n.Description},
+		{"Author", n.Author},
+		{"License", n.License},
+		{"Keywords", strings.Join(n.Keyword, ", ")},
+	}
+	table(pdf, rows)
 
-	heading2("Project Summary", pdf)
-	pdf.SetY(65)
-	heading3("Project Summary", pdf)
 	pdf.AddPage()
 	pdf.SetFont("BubisNeue", "", 12)
 	pdf.MultiCell(0, 10, "Seconda pagina del report con lo stesso header in alto.", "", "L", false)
@@ -102,4 +115,24 @@ func heading2(title string, pdf *gofpdf.Fpdf) {
 func heading3(title string, pdf *gofpdf.Fpdf) {
 	pdf.SetFont("BubisNeue", "", 18)
 	pdf.CellFormat(0, 0, title, "", 1, "L", true, 0, "")
+}
+
+func table(pdf *gofpdf.Fpdf, rows [][]string) {
+
+	pageWidth, _ := pdf.GetPageSize()
+	marginLeft, _, marginRight, _ := pdf.GetMargins()
+	usableWidth := pageWidth - marginLeft - marginRight
+
+	col1Width := usableWidth * 0.3
+	col2Width := usableWidth * 0.7
+
+	for _, row := range rows {
+		pdf.SetFont("BubisNeue", "", 14)
+		pdf.SetFillColor(200, 137, 154)
+		pdf.CellFormat(col1Width, 10, row[0], "1", 0, "L", true, 0, "")
+
+		pdf.SetFont("Roboto", "", 12)
+		pdf.SetFillColor(255, 255, 255)
+		pdf.CellFormat(col2Width, 10, row[1], "1", 1, "L", true, 0, "")
+	}
 }
