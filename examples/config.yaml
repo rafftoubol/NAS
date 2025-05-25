@@ -1,4 +1,4 @@
 projectPath: "https://github.com/strobes-security/nextjs-vulnerable-app"
 outputPath: "./report.pdf"
-codeScan: true
-dependenciesScan: true
+codeScan: false
+dependenciesScan: false
