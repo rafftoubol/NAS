@@ -40,8 +40,15 @@ func GeneratePDF(r *Report, n *utils.Next, c *config.Config) error {
    \ \__\\ \__\ \__\ \__\____\_\  \ 
     \|__| \|__|\|__|\|__|\_________\
                         \|_________|`
-	lines := strings.Split(strings.Trim(logo, "\n "), "\n")
-	lineHeight := 0.9
+
+	depCount := 0
+	for range n.Dependencies {
+		depCount++
+	}
+	devDepCount := 0
+	for range n.DevDependencies {
+		devDepCount++
+	}
 
 	// Settings Template
 	pdf := gofpdf.New("P", "mm", "A4", "")
@@ -55,6 +62,8 @@ func GeneratePDF(r *Report, n *utils.Next, c *config.Config) error {
 	pdf.SetHeaderFuncMode(func() {
 		pdf.SetY(10)
 		pdf.SetFont("Courier", "B", 3)
+		lines := strings.Split(strings.Trim(logo, "\n "), "\n")
+		lineHeight := 0.9
 		for _, line := range lines {
 			strWidth := pdf.GetStringWidth(line)
 			pdf.SetTextColor(120, 0, 63)
@@ -84,14 +93,6 @@ func GeneratePDF(r *Report, n *utils.Next, c *config.Config) error {
 	pdf.AddPage()
 	heading1("Next.js Project Summary", pdf)
 	pdf.SetY(pdf.GetY() + line)
-	depCount := 0
-	for range n.Dependencies {
-		depCount++
-	}
-	devDepCount := 0
-	for range n.DevDependencies {
-		devDepCount++
-	}
 
 	nextTable := [][]string{
 		{"Project title", n.Name},
@@ -113,18 +114,24 @@ func GeneratePDF(r *Report, n *utils.Next, c *config.Config) error {
 		{c.ProjectPath, c.OutputPath, strconv.FormatBool(c.CodeScan), strconv.FormatBool(c.DependenciesScan)},
 	}
 	tableV(pdf, scannerSettings)
-	pdf.SetDrawColor(139, 74, 105)
 
-	pdf.SetLineWidth(0.6)
-	pdf.Line(10, pdf.GetY()+5, pageWidth-10, pdf.GetY()+5)
-	pdf.SetY(pdf.GetY() + bgLine + 2)
-	heading2("NAS Scan Result", pdf)
+	// Second Page
+	pdf.AddPage()
+	heading1("Scan Result", pdf)
 
 	pdf.SetY(pdf.GetY() + bgLine)
-	heading3("DepScan Result", pdf)
 
+	// Dep Scan Part
+	heading2("Dependencies Scan", pdf)
+	pdf.SetY(pdf.GetY() + line)
+	depScanResult(depCount+devDepCount, r, pdf)
 	pdf.SetY(pdf.GetY() + bgLine)
-	heading3("CodeScan Result", pdf)
+
+	// Code Scan Part
+	heading2("Code Scan", pdf)
+	pdf.SetY(pdf.GetY() + line)
+	codeScanResult(r, pdf)
+
 	// Generation
 	if err := pdf.OutputFileAndClose("generated.pdf"); err != nil {
 		return err
@@ -146,7 +153,8 @@ func heading1(title string, pdf *gofpdf.Fpdf) {
 }
 
 func heading2(title string, pdf *gofpdf.Fpdf) {
-	pdf.SetFont("BubisNeue", "", 24)
+	pdf.SetFont("BubisNeue", "", 22)
+
 	pdf.CellFormat(0, 0, title, "", 1, "L", true, 0, "")
 }
 func heading3(title string, pdf *gofpdf.Fpdf) {
@@ -210,4 +218,92 @@ func tableV(pdf *gofpdf.Fpdf, col [][]string) {
 		}
 		pdf.Ln(-1)
 	}
+}
+
+func depScanResult(safeCount int, r *Report, pdf *gofpdf.Fpdf) {
+	vulnCountDep := 0
+	vulnPkgCountDep := 0
+	for _, result := range r.DepReport.Results {
+		if len(result.Vulns) > 0 {
+			vulnCountDep++
+			vulnPkgCountDep += len(result.Vulns)
+		}
+	}
+	vulnCountDevDep := 0
+	vulnPkgCountDevDep := 0
+	for _, result := range r.DepDevReport.Results {
+		if len(result.Vulns) > 0 {
+			vulnCountDevDep++
+			vulnPkgCountDevDep += len(result.Vulns)
+		}
+	}
+	vulnerableCount := vulnCountDevDep + vulnCountDep
+	pdf.SetFont("BubisNeue", "", 13)
+	pdf.CellFormat(pdf.GetStringWidth("Safe packages: ")+5, 8.0, "Safe packages: ", "", 0, "L", false, 0, "")
+	pdf.SetFillColor(137, 200, 154)
+	pdf.SetTextColor(255, 255, 255)
+	pdf.CellFormat(20, 8.0, fmt.Sprintf("%d", safeCount-vulnerableCount), "", 0, "C", true, 0, "")
+	pdf.SetTextColor(0, 0, 0)
+
+	pdf.CellFormat(10, 8.0, "", "", 0, "L", false, 0, "")
+
+	pdf.CellFormat(pdf.GetStringWidth("Vulnerable packages:")+5, 8.0, "Vulnerable packages: ", "", 0, "L", false, 0, "")
+	pdf.SetFillColor(200, 137, 154)
+	pdf.SetTextColor(255, 255, 255)
+	pdf.CellFormat(20, 8.0, fmt.Sprintf("%d", vulnerableCount), "", 1, "C", true, 0, "")
+	pdf.SetTextColor(0, 0, 0)
+
+	if vulnerableCount == 0 {
+		return
+	}
+	pdf.Ln(5)
+	printVulnsByPackage := func(results []depScanner.Result, pdf *gofpdf.Fpdf) {
+		for _, result := range results {
+			if len(result.Vulns) == 0 {
+				continue
+			}
+
+			// Dynamic width
+			maxWidth := 0.0
+			for _, vuln := range result.Vulns {
+				id := strings.Join(vuln.Aliases, ", ")
+				w := pdf.GetStringWidth(id)
+				if w > maxWidth {
+					maxWidth = w
+				}
+			}
+			maxWidth += 8
+
+			pdf.SetFont("BubisNeue", "", 14)
+			pkgTitle := fmt.Sprintf("Package: %s (%d vulnerabilities)", result.PackageName, len(result.Vulns))
+			pdf.SetFillColor(138, 41, 84)
+			pdf.SetTextColor(255, 255, 255)
+			pdf.CellFormat(0, 8, pkgTitle, "1", 1, "L", true, 0, "")
+
+			pdf.SetFont("BubisNeue", "", 13)
+			pdf.SetFillColor(200, 137, 154)
+			pdf.SetTextColor(0, 0, 0)
+			pdf.CellFormat(maxWidth, 8, "Vulnerability ID", "1", 0, "C", true, 0, "")
+			pdf.CellFormat(0, 8, "Summary", "1", 1, "C", true, 0, "")
+
+			pdf.SetFont("Roboto", "", 10)
+			for _, vuln := range result.Vulns {
+				id := strings.Join(vuln.Aliases, ", ")
+
+				pdf.CellFormat(maxWidth, 8, id, "1", 0, "L", false, 0, "")
+				pdf.MultiCell(0, 8, vuln.Summary, "1", "L", false)
+			}
+
+			pdf.Ln(5)
+		}
+
+	}
+
+	printVulnsByPackage(r.DepReport.Results, pdf)
+	printVulnsByPackage(r.DepDevReport.Results, pdf)
+
+}
+
+func codeScanResult(r *Report, pdf *gofpdf.Fpdf) {
+	// To work on
 }
