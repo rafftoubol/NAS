@@ -7,6 +7,7 @@ import (
 	"attack-surface/src/utils/config"
 	"fmt"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -31,6 +32,7 @@ var (
 func GeneratePDF(r *Report, n *utils.Next, c *config.Config) error {
 	logrus.Debug("Generating Report")
 
+	linkMap := make(map[string]int)
 	logo := `
  ________   ________  ________      
 |\   ___  \|\   __  \|\   ____\     
@@ -124,13 +126,21 @@ func GeneratePDF(r *Report, n *utils.Next, c *config.Config) error {
 	// Dep Scan Part
 	heading2("Dependencies Scan", pdf)
 	pdf.SetY(pdf.GetY() + line)
-	depScanResult(depCount+devDepCount, r, pdf)
+	depScanResult(depCount+devDepCount, r, linkMap, pdf)
 	pdf.SetY(pdf.GetY() + bgLine)
 
 	// Code Scan Part
 	heading2("Code Scan", pdf)
 	pdf.SetY(pdf.GetY() + line)
 	codeScanResult(r, pdf)
+
+	// Third Page
+	pdf.AddPage()
+
+	pdf.SetFont("BubisNeue", "", 36)
+	pdf.CellFormat(0, pageHeight/2+18, "Vulnerabilities Details", "", 1, "C", false, 0, "")
+
+	vulnScanDetails(linkMap, r, pdf)
 
 	// Generation
 	if err := pdf.OutputFileAndClose("generated.pdf"); err != nil {
@@ -220,7 +230,8 @@ func tableV(pdf *gofpdf.Fpdf, col [][]string) {
 	}
 }
 
-func depScanResult(safeCount int, r *Report, pdf *gofpdf.Fpdf) {
+func depScanResult(safeCount int, r *Report, linkMap map[string]int, pdf *gofpdf.Fpdf) {
+
 	vulnCountDep := 0
 	vulnPkgCountDep := 0
 	for _, result := range r.DepReport.Results {
@@ -263,9 +274,10 @@ func depScanResult(safeCount int, r *Report, pdf *gofpdf.Fpdf) {
 				continue
 			}
 
-			// Dynamic width
+			// Dynamic width + Link mapping
 			maxWidth := 0.0
 			for _, vuln := range result.Vulns {
+				linkMap[vuln.Aliases[0]] = pdf.AddLink()
 				id := strings.Join(vuln.Aliases, ", ")
 				w := pdf.GetStringWidth(id)
 				if w > maxWidth {
@@ -289,8 +301,9 @@ func depScanResult(safeCount int, r *Report, pdf *gofpdf.Fpdf) {
 			pdf.SetFont("Roboto", "", 10)
 			for _, vuln := range result.Vulns {
 				id := strings.Join(vuln.Aliases, ", ")
-
-				pdf.CellFormat(maxWidth, 8, id, "1", 0, "L", false, 0, "")
+				pdf.SetTextColor(0, 0, 255)
+				pdf.CellFormat(maxWidth, 8, id, "1", 0, "L", false, linkMap[vuln.Aliases[0]], "")
+				pdf.SetTextColor(0, 0, 0)
 				pdf.MultiCell(0, 8, vuln.Summary, "1", "L", false)
 			}
 
@@ -306,4 +319,93 @@ func depScanResult(safeCount int, r *Report, pdf *gofpdf.Fpdf) {
 
 func codeScanResult(r *Report, pdf *gofpdf.Fpdf) {
 	// To work on
+}
+
+func vulnScanDetails(linkMap map[string]int, r *Report, pdf *gofpdf.Fpdf) {
+	pageWidth, _ := pdf.GetPageSize()
+	marginLeft, _, marginRight, _ := pdf.GetMargins()
+	usableWidth := pageWidth - marginLeft - marginRight
+	printVulnsDetail := func(results []depScanner.Result, pdf *gofpdf.Fpdf) {
+		for _, result := range results {
+			if len(result.Vulns) == 0 {
+				continue
+			}
+			pdf.AddPage()
+
+			heading2(result.PackageName, pdf)
+			pdf.SetY(pdf.GetY() + line)
+
+			for i, vuln := range result.Vulns {
+				if i != 0 {
+					pdf.AddPage()
+				}
+				heading3(vuln.Aliases[0], pdf)
+				pdf.SetY(pdf.GetY() + smLine)
+				pdf.SetFont("Roboto", "", 10)
+				pdf.SetLink(linkMap[vuln.Aliases[0]], 0, pdf.PageNo())
+				pdf.MultiCell(usableWidth, 6, fmt.Sprintf("%s.", vuln.Summary), "", "L", false)
+				pdf.SetY(pdf.GetY() + smLine)
+				pdf.SetFont("BubisNeue", "", 13)
+				pdf.CellFormat(0, 8, "Details", "1", 1, "C", false, 0, "")
+				pdf.SetY(pdf.GetY() + smLine)
+				pdf.SetFont("Roboto", "", 10)
+				renderMarkdown(pdf, vuln.Details, usableWidth)
+			}
+
+		}
+
+	}
+
+	printVulnsDetail(r.DepReport.Results, pdf)
+	printVulnsDetail(r.DepDevReport.Results, pdf)
+}
+
+func renderMarkdown(pdf *gofpdf.Fpdf, text string, usableWidth float64) {
+	lines := strings.Split(text, "\n")
+
+	isCodeBlock := false
+	var codeBuffer []string
+
+	// Rules to parse
+	headerRegex := regexp.MustCompile(`^(#{1,6})\s*(.*)`)
+	boldRegex := regexp.MustCompile(`\*\*(.*?)\*\*`)
+	italicRegex := regexp.MustCompile(`\*(.*?)\*`)
+	linkRegex := regexp.MustCompile(`\[(.*?)\]\((.*?)\)`)
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+
+		if strings.HasPrefix(trimmed, "```") {
+			isCodeBlock = !isCodeBlock
+			if !isCodeBlock {
+
+				codeText := strings.Join(codeBuffer, "\n")
+				pdf.SetFont("Courier", "", 9)
+				pdf.SetFillColor(230, 230, 230)
+				pdf.MultiCell(usableWidth, 5, codeText, "", "L", true)
+				pdf.Ln(2)
+				codeBuffer = nil
+			}
+			continue
+		}
+		if isCodeBlock {
+			codeBuffer = append(codeBuffer, line)
+			continue
+		}
+
+		if matches := headerRegex.FindStringSubmatch(trimmed); matches != nil {
+			pdf.SetFont("BubisNeue", "", 13)
+			pdf.MultiCell(usableWidth, 6, matches[2], "", "L", false)
+			pdf.Ln(1)
+			continue
+		}
+
+		trimmed = linkRegex.ReplaceAllString(trimmed, "$1 ($2)")
+		trimmed = boldRegex.ReplaceAllString(trimmed, "$1")
+		trimmed = italicRegex.ReplaceAllString(trimmed, "$1")
+
+		pdf.SetFont("Roboto", "", 10)
+		pdf.MultiCell(usableWidth, 5, trimmed, "", "L", false)
+		pdf.Ln(1)
+	}
 }
