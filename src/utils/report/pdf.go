@@ -38,6 +38,7 @@ func GeneratePDF(r *Report, n *utils.Next, outputPath string) error {
 	pdf.AliasNbPages("")
 	pdf.AddUTF8Font("BubisNeue", "", "font/BebasNeue-Regular.ttf")
 	pdf.AddUTF8Font("Roboto", "", "font/Roboto-Regular.ttf")
+	pdf.AddUTF8Font("Roboto", "I", "font/Roboto-Italic.ttf")
 	pdf.SetMargins(10, 10, 10)
 	pageWidth, pageHeight := pdf.GetPageSize()
 
@@ -63,7 +64,7 @@ func GeneratePDF(r *Report, n *utils.Next, outputPath string) error {
 		pdf.Line(10, pageHeight-15, pageWidth-10, pageHeight-15)
 
 		pdf.SetY(pageHeight - 15)
-		pdf.SetFont("Apple", "I", 10)
+		pdf.SetFont("Roboto", "I", 10)
 		pdf.CellFormat(0, 10, time.Now().Format("02/01/2006 15:04"), "", 0, "L", false, 0, "")
 		pageInfo := fmt.Sprintf("Page %d of {nb}", pdf.PageNo())
 		pdf.CellFormat(0, 10, pageInfo, "", 0, "R", false, 0, "")
