@@ -14,9 +14,10 @@ import (
 	"attack-surface/src/utils/config"
 	"attack-surface/src/utils/report"
 	"fmt"
+	"strings"
+
 	"github.com/fatih/color"
 	"github.com/sirupsen/logrus"
-	"strings"
 )
 
 type Scanner struct {
@@ -91,7 +92,7 @@ func (b *Scanner) Scan() error {
 
 		// Draft, change how we check if is empty
 		if len(b.report.CodeReport.Methods) == 0 || len(b.report.CodeReport.CORS) == 0 || len(b.report.CodeReport.RCE) == 0 ||
-			len(b.report.CodeReport.ApiKey) == 0 || len(b.report.CodeReport.CoomentsSecrets) == 0 {
+			len(b.report.CodeReport.ApiKey) == 0 || len(b.report.CodeReport.CommentsSecrets) == 0 {
 			logrus.Info("Code Scan found no Vulnerabilities")
 		}
 	} else {
@@ -149,5 +150,5 @@ func (b *Scanner) Print() error {
 	// Change in the future
 	// This control that we have this
 
-	return report.GeneratePDF(b.report, b.config.OutputPath)
+	return report.GeneratePDF(b.report, b.next, b.config)
 }
