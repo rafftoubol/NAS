@@ -120,27 +120,37 @@ func GeneratePDF(r *Report, n *utils.Next, c *config.Config) error {
 	// Second Page
 	pdf.AddPage()
 	heading1("Scan Result", pdf)
-
 	pdf.SetY(pdf.GetY() + bgLine)
 
 	// Dep Scan Part
 	heading2("Dependencies Scan", pdf)
 	pdf.SetY(pdf.GetY() + line)
-	depScanResult(depCount+devDepCount, r, linkMap, pdf)
+	if c.DependenciesScan {
+		depScanResult(depCount+devDepCount, r, linkMap, pdf)
+	} else {
+		pdf.SetFont("Roboto", "", 10)
+		pdf.CellFormat(0, 0, "Dependencies Scan is Skipped (Disabled).", "", 1, "L", false, 0, "")
+	}
 	pdf.SetY(pdf.GetY() + bgLine)
 
 	// Code Scan Part
 	heading2("Code Scan", pdf)
 	pdf.SetY(pdf.GetY() + line)
-	codeScanResult(r, pdf)
+	if c.CodeScan {
+		codeScanResult(r, pdf)
+	} else {
+		pdf.SetFont("Roboto", "", 10)
+		pdf.CellFormat(0, 0, "Code Scan is Skipped (Disabled).", "", 1, "L", false, 0, "")
+	}
 
-	// Third Page
-	pdf.AddPage()
+	if c.DependenciesScan {
+		// Third Page
+		pdf.AddPage()
 
-	pdf.SetFont("BubisNeue", "", 36)
-	pdf.CellFormat(0, pageHeight/2+18, "Vulnerabilities Details", "", 1, "C", false, 0, "")
-
-	vulnScanDetails(linkMap, r, pdf)
+		pdf.SetFont("BubisNeue", "", 36)
+		pdf.CellFormat(0, pageHeight/2+18, "Vulnerabilities Details", "", 1, "C", false, 0, "")
+		vulnScanDetails(linkMap, r, pdf)
+	}
 
 	// Generation
 	if err := pdf.OutputFileAndClose("generated.pdf"); err != nil {
@@ -248,7 +258,13 @@ func depScanResult(safeCount int, r *Report, linkMap map[string]int, pdf *gofpdf
 			vulnPkgCountDevDep += len(result.Vulns)
 		}
 	}
+
 	vulnerableCount := vulnCountDevDep + vulnCountDep
+
+	if vulnerableCount == 0 {
+		return
+	}
+
 	pdf.SetFont("BubisNeue", "", 13)
 	pdf.CellFormat(pdf.GetStringWidth("Safe packages: ")+5, 8.0, "Safe packages: ", "", 0, "L", false, 0, "")
 	pdf.SetFillColor(137, 200, 154)
@@ -264,9 +280,6 @@ func depScanResult(safeCount int, r *Report, linkMap map[string]int, pdf *gofpdf
 	pdf.CellFormat(20, 8.0, fmt.Sprintf("%d", vulnerableCount), "", 1, "C", true, 0, "")
 	pdf.SetTextColor(0, 0, 0)
 
-	if vulnerableCount == 0 {
-		return
-	}
 	pdf.Ln(5)
 	printVulnsByPackage := func(results []depScanner.Result, pdf *gofpdf.Fpdf) {
 		for _, result := range results {
