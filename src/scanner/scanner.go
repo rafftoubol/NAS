@@ -92,7 +92,7 @@ func (b *Scanner) Scan() error {
 
 		// Draft, change how we check if is empty
 		if len(b.report.CodeReport.Methods) == 0 || len(b.report.CodeReport.CORS) == 0 || len(b.report.CodeReport.RCE) == 0 ||
-			len(b.report.CodeReport.ApiKey) == 0 || len(b.report.CodeReport.CoomentsSecrets) == 0 {
+			len(b.report.CodeReport.ApiKey) == 0 || len(b.report.CodeReport.CommentsSecrets) == 0 {
 			logrus.Info("Code Scan found no Vulnerabilities")
 		}
 	} else {

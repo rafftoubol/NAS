@@ -112,7 +112,7 @@ func GeneratePDF(r *Report, n *utils.Next, c *config.Config) error {
 	heading3("Scanner Settings", pdf)
 	pdf.SetY(pdf.GetY() + smLine)
 	scannerSettings := [][]string{
-		{"Project Path", "Ouputh Path", "Code Scanner", "Dependencies Scanner"},
+		{"Project Path", "Output Path", "Code Scanner", "Dependencies Scanner"},
 		{c.ProjectPath, c.OutputPath, strconv.FormatBool(c.CodeScan), strconv.FormatBool(c.DependenciesScan)},
 	}
 	tableV(pdf, scannerSettings)
@@ -134,22 +134,32 @@ func GeneratePDF(r *Report, n *utils.Next, c *config.Config) error {
 	pdf.SetY(pdf.GetY() + bgLine)
 
 	// Code Scan Part
-	heading2("Code Scan", pdf)
 	pdf.SetY(pdf.GetY() + line)
 	if c.CodeScan {
-		codeScanResult(r, pdf)
+		codeScanResult(r, linkMap, pdf)
 	} else {
 		pdf.SetFont("Roboto", "", 10)
 		pdf.CellFormat(0, 0, "Code Scan is Skipped (Disabled).", "", 1, "L", false, 0, "")
 	}
 
-	if c.DependenciesScan {
-		// Third Page
-		pdf.AddPage()
+	if c.DependenciesScan || c.CodeScan {
+		// Add code scan results directly
+		if c.CodeScan && r.CodeReport != nil && countCodeVulnerabilities(r.CodeReport) > 0 {
+			codeScanResult(r, linkMap, pdf)
+		}
 
-		pdf.SetFont("BubisNeue", "", 36)
-		pdf.CellFormat(0, pageHeight/2+18, "Vulnerabilities Details", "", 1, "C", false, 0, "")
-		vulnScanDetails(linkMap, r, pdf)
+		// Third Page for vulnerability details
+		if c.DependenciesScan {
+			pdf.AddPage()
+			pdf.SetFont("BubisNeue", "", 36)
+			pdf.CellFormat(0, pageHeight/2+18, "Vulnerabilities Details", "", 1, "C", false, 0, "")
+			vulnScanDetails(linkMap, r, pdf)
+		}
+
+		if c.CodeScan && r.CodeReport != nil && countCodeVulnerabilities(r.CodeReport) > 0 {
+			pdf.AddPage()
+			codeVulnScanDetails(linkMap, r, pdf)
+		}
 	}
 
 	// Generation
@@ -330,8 +340,206 @@ func depScanResult(safeCount int, r *Report, linkMap map[string]int, pdf *gofpdf
 
 }
 
-func codeScanResult(r *Report, pdf *gofpdf.Fpdf) {
-	// To work on
+func codeScanResult(r *Report, linkMap map[string]int, pdf *gofpdf.Fpdf) {
+	if r.CodeReport == nil {
+		pdf.SetFont("Roboto", "", 10)
+		pdf.CellFormat(0, 0, "No code scan data available.", "", 1, "L", false, 0, "")
+		return
+	}
+
+	totalVulns := countCodeVulnerabilities(r.CodeReport)
+	if totalVulns == 0 {
+		pdf.SetFont("Roboto", "", 10)
+		pdf.CellFormat(0, 0, "No code vulnerabilities found.", "", 1, "L", false, 0, "")
+		return
+	}
+
+	pdf.AddPage()
+	heading2("Code Scan", pdf)
+	pdf.SetY(pdf.GetY() + line)
+
+	pdf.SetFont("BubisNeue", "", 13)
+	pdf.CellFormat(pdf.GetStringWidth("Total vulnerabilities found: ")+5, 8.0, "Total vulnerabilities found: ", "", 0, "L", false, 0, "")
+	pdf.SetFillColor(200, 137, 154)
+	pdf.SetTextColor(255, 255, 255)
+	pdf.CellFormat(20, 8.0, fmt.Sprintf("%d", totalVulns), "", 1, "C", true, 0, "")
+	pdf.SetTextColor(0, 0, 0)
+
+	pdf.Ln(5)
+
+	pageWidth, _ := pdf.GetPageSize()
+	marginLeft, _, marginRight, _ := pdf.GetMargins()
+	usableWidth := pageWidth - marginLeft - marginRight
+
+	pathWidth := usableWidth * 0.8
+	lineWidth := usableWidth * 0.2
+	lineHeight := 6.0
+
+	vulnTypes := []struct {
+		name       string
+		vulns      []codeScanner.Vulnerability
+		isCritical bool
+	}{
+		{"Remote Code Execution (RCE)", r.CodeReport.RCE, true},
+		{"Child Process Execution", r.CodeReport.ChildProcess, true},
+		{"VM Module Usage", r.CodeReport.VmModule, true},
+		{"Function Constructor Usage", r.CodeReport.FunctionConstructor, true},
+		{"Hardcoded Secrets", r.CodeReport.HardcodedSecrets, true},
+		{"AWS Keys Exposure", r.CodeReport.AWSKeys, true},
+		{"JWT Secrets Exposure", r.CodeReport.JWTSecrets, true},
+		{"Database URL Exposure", r.CodeReport.DBUrl, true},
+		{"Comments Secrets", r.CodeReport.CommentsSecrets, true},
+		{"API Key Exposure", r.CodeReport.ApiKey, true},
+		{"Cross-Site Scripting (XSS)", append(r.CodeReport.DSetHTML, append(r.CodeReport.EventHandlers, r.CodeReport.JavaScriptURLs...)...), false},
+		{"React Security Issues", append(r.CodeReport.ReactRefsBypass, append(r.CodeReport.NextJSScriptBypass, r.CodeReport.NextJSHeadBypass...)...), false},
+		{"Server-Side Rendering Issues", append(r.CodeReport.ServerSideBypass, r.CodeReport.NextJSMiddleware...), false},
+		{"Dynamic Imports", r.CodeReport.DynamicImports, false},
+		{"CORS Issues", append(r.CodeReport.CORS, r.CodeReport.CorsCredentials...), false},
+		{"HTTP Methods", r.CodeReport.Methods, false},
+	}
+
+	for _, vulnType := range vulnTypes {
+		if len(vulnType.vulns) == 0 {
+			continue
+		}
+
+		if vulnType.isCritical {
+			pdf.SetFillColor(180, 50, 50)
+		} else {
+			pdf.SetFillColor(138, 41, 84)
+		}
+
+		pdf.SetFont("BubisNeue", "", 14)
+		typeTitle := fmt.Sprintf("%s (%d issues)", vulnType.name, len(vulnType.vulns))
+		pdf.SetTextColor(255, 255, 255)
+		pdf.CellFormat(0, 8, typeTitle, "1", 1, "L", true, 0, "")
+
+		pdf.SetFont("BubisNeue", "", 11)
+		pdf.SetFillColor(200, 137, 154)
+		pdf.SetTextColor(0, 0, 0)
+		pdf.CellFormat(pathWidth, 8, "File Path", "1", 0, "C", true, 0, "")
+		pdf.CellFormat(lineWidth, 8, "Line", "1", 1, "C", true, 0, "")
+
+		pdf.SetFont("Roboto", "", 9)
+		for _, vuln := range vulnType.vulns {
+			cleanPath := strings.TrimPrefix(vuln.Path, "tmp/")
+			vulnID := fmt.Sprintf("%s:L%d", cleanPath, vuln.Line)
+
+			// Create link and store it
+			linkMap[vulnID] = pdf.AddLink()
+
+			// Calculate dynamic height based on file path wrapping
+			pathLines := pdf.SplitText(cleanPath, pathWidth)
+			height := float64(len(pathLines)) * lineHeight
+
+			y := pdf.GetY()
+			x := pdf.GetX()
+
+			// File path cell with wrapping and link
+			pdf.SetXY(x, y)
+			pdf.SetFillColor(255, 255, 255)
+			pdf.SetTextColor(0, 0, 255)
+
+			// Split the MultiCell into lines and add links to each line
+			for i, line := range pathLines {
+				if i == 0 {
+					// First line gets the link
+					pdf.CellFormat(pathWidth, lineHeight, line, "1", 1, "L", true, linkMap[vulnID], "")
+				} else {
+					// Subsequent lines without links
+					pdf.SetX(x)
+					pdf.CellFormat(pathWidth, lineHeight, line, "1", 1, "L", true, 0, "")
+				}
+			}
+
+			// Line number cell (fixed height) with link
+			pdf.SetXY(x+pathWidth, y)
+			pdf.CellFormat(lineWidth, height, strconv.Itoa(vuln.Line), "1", 0, "C", false, linkMap[vulnID], "")
+			pdf.SetTextColor(0, 0, 0)
+
+			pdf.SetY(y + height)
+		}
+
+		pdf.Ln(5)
+	}
+}
+
+func codeVulnScanDetails(linkMap map[string]int, r *Report, pdf *gofpdf.Fpdf) {
+	pageWidth, _ := pdf.GetPageSize()
+	marginLeft, _, marginRight, _ := pdf.GetMargins()
+	usableWidth := pageWidth - marginLeft - marginRight
+	vulnTypes := []struct {
+		name       string
+		vulns      []codeScanner.Vulnerability
+		isCritical bool
+	}{
+		{"Remote Code Execution (RCE)", r.CodeReport.RCE, true},
+		{"Child Process Execution", r.CodeReport.ChildProcess, true},
+		{"VM Module Usage", r.CodeReport.VmModule, true},
+		{"Function Constructor Usage", r.CodeReport.FunctionConstructor, true},
+		{"Hardcoded Secrets", r.CodeReport.HardcodedSecrets, true},
+		{"AWS Keys Exposure", r.CodeReport.AWSKeys, true},
+		{"JWT Secrets Exposure", r.CodeReport.JWTSecrets, true},
+		{"Database URL Exposure", r.CodeReport.DBUrl, true},
+		{"Comments Secrets", r.CodeReport.CommentsSecrets, true},
+		{"API Key Exposure", r.CodeReport.ApiKey, true},
+		{"Cross-Site Scripting (XSS)", append(r.CodeReport.DSetHTML, append(r.CodeReport.EventHandlers, r.CodeReport.JavaScriptURLs...)...), false},
+		{"React Security Issues", append(r.CodeReport.ReactRefsBypass, append(r.CodeReport.NextJSScriptBypass, r.CodeReport.NextJSHeadBypass...)...), false},
+		{"Server-Side Rendering Issues", append(r.CodeReport.ServerSideBypass, r.CodeReport.NextJSMiddleware...), false},
+		{"Dynamic Imports", r.CodeReport.DynamicImports, false},
+		{"CORS Issues", append(r.CodeReport.CORS, r.CodeReport.CorsCredentials...), false},
+		{"HTTP Methods", r.CodeReport.Methods, false},
+	}
+	for _, vulnType := range vulnTypes {
+		if len(vulnType.vulns) == 0 {
+			continue
+		}
+		pdf.SetY(pdf.GetY() + line)
+		for i, vuln := range vulnType.vulns {
+			if i != 0 {
+				pdf.AddPage()
+			}
+			cleanPath := strings.TrimPrefix(vuln.Path, "tmp/")
+			vulnID := fmt.Sprintf("%s:L%d", cleanPath, vuln.Line)
+
+			heading3(vulnType.name, pdf)
+			pdf.SetY(pdf.GetY() + smLine)
+
+			// Set the link destination
+			if linkID, exists := linkMap[vulnID]; exists {
+				pdf.SetLink(linkID, 0, pdf.PageNo())
+			}
+
+			pdf.SetFont("Roboto", "", 10)
+			summary := fmt.Sprintf("%s vulnerability found in %s at line %d.", vuln.Type, cleanPath, vuln.Line)
+			pdf.MultiCell(usableWidth, 6, summary, "", "L", false)
+			pdf.SetY(pdf.GetY() + smLine)
+
+			pdf.SetFont("BubisNeue", "", 13)
+			pdf.CellFormat(0, 8, "Details", "1", 1, "C", false, 0, "")
+			pdf.SetY(pdf.GetY() + smLine)
+
+			pdf.SetFont("Roboto", "", 10)
+			pdf.MultiCell(usableWidth, 6, "Vulnerable code:", "", "L", false)
+			pdf.SetY(pdf.GetY() + 2)
+
+			pdf.SetFont("Courier", "", 9)
+			pdf.SetFillColor(245, 245, 245)
+			pdf.MultiCell(usableWidth, 5, vuln.Content, "1", "L", true)
+			pdf.SetY(pdf.GetY() + smLine)
+		}
+	}
+}
+
+func countCodeVulnerabilities(report *codeScanner.CodeScanReport) int {
+	return len(report.Methods) + len(report.CORS) + len(report.CorsCredentials) +
+		len(report.RCE) + len(report.ApiKey) + len(report.CommentsSecrets) +
+		len(report.FunctionConstructor) + len(report.VmModule) + len(report.HardcodedSecrets) +
+		len(report.AWSKeys) + len(report.JWTSecrets) + len(report.DBUrl) +
+		len(report.ChildProcess) + len(report.DSetHTML) + len(report.ReactRefsBypass) +
+		len(report.NextJSScriptBypass) + len(report.NextJSHeadBypass) + len(report.DynamicImports) +
+		len(report.EventHandlers) + len(report.JavaScriptURLs) + len(report.ServerSideBypass) +
+		len(report.NextJSMiddleware)
 }
 
 func vulnScanDetails(linkMap map[string]int, r *Report, pdf *gofpdf.Fpdf) {
