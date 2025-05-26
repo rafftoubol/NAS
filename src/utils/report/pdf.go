@@ -472,10 +472,6 @@ func codeVulnScanDetails(linkMap map[string]int, r *Report, pdf *gofpdf.Fpdf) {
 			pdf.MultiCell(usableWidth, 6, summary, "", "L", false)
 			pdf.SetY(pdf.GetY() + smLine)
 
-			pdf.SetFont("BubisNeue", "", 13)
-			pdf.CellFormat(0, 8, "Details", "1", 1, "C", false, 0, "")
-			pdf.SetY(pdf.GetY() + smLine)
-
 			pdf.SetFont("Roboto", "", 10)
 			pdf.MultiCell(usableWidth, 6, "Vulnerable code:", "", "L", false)
 			pdf.SetY(pdf.GetY() + 2)
