@@ -23,6 +23,12 @@ type Report struct {
 	DepDevReport *depScanner.Response
 }
 
+type vulnTypeConfig struct {
+	name       string
+	vulns      []codeScanner.Vulnerability
+	isCritical bool
+}
+
 var (
 	bgLine = 12.0
 	line   = 9.0
@@ -143,11 +149,6 @@ func GeneratePDF(r *Report, n *utils.Next, c *config.Config) error {
 	}
 
 	if c.DependenciesScan || c.CodeScan {
-		// Add code scan results directly
-		if c.CodeScan && r.CodeReport != nil && countCodeVulnerabilities(r.CodeReport) > 0 {
-			codeScanResult(r, linkMap, pdf)
-		}
-
 		// Third Page for vulnerability details
 		if c.DependenciesScan {
 			pdf.AddPage()
@@ -375,28 +376,7 @@ func codeScanResult(r *Report, linkMap map[string]int, pdf *gofpdf.Fpdf) {
 	lineWidth := usableWidth * 0.2
 	lineHeight := 6.0
 
-	vulnTypes := []struct {
-		name       string
-		vulns      []codeScanner.Vulnerability
-		isCritical bool
-	}{
-		{"Remote Code Execution (RCE)", r.CodeReport.RCE, true},
-		{"Child Process Execution", r.CodeReport.ChildProcess, true},
-		{"VM Module Usage", r.CodeReport.VmModule, true},
-		{"Function Constructor Usage", r.CodeReport.FunctionConstructor, true},
-		{"Hardcoded Secrets", r.CodeReport.HardcodedSecrets, true},
-		{"AWS Keys Exposure", r.CodeReport.AWSKeys, true},
-		{"JWT Secrets Exposure", r.CodeReport.JWTSecrets, true},
-		{"Database URL Exposure", r.CodeReport.DBUrl, true},
-		{"Comments Secrets", r.CodeReport.CommentsSecrets, true},
-		{"API Key Exposure", r.CodeReport.ApiKey, true},
-		{"Cross-Site Scripting (XSS)", append(r.CodeReport.DSetHTML, append(r.CodeReport.EventHandlers, r.CodeReport.JavaScriptURLs...)...), false},
-		{"React Security Issues", append(r.CodeReport.ReactRefsBypass, append(r.CodeReport.NextJSScriptBypass, r.CodeReport.NextJSHeadBypass...)...), false},
-		{"Server-Side Rendering Issues", append(r.CodeReport.ServerSideBypass, r.CodeReport.NextJSMiddleware...), false},
-		{"Dynamic Imports", r.CodeReport.DynamicImports, false},
-		{"CORS Issues", append(r.CodeReport.CORS, r.CodeReport.CorsCredentials...), false},
-		{"HTTP Methods", r.CodeReport.Methods, false},
-	}
+	vulnTypes := getCodeVulnTypes(r.CodeReport)
 
 	for _, vulnType := range vulnTypes {
 		if len(vulnType.vulns) == 0 {
@@ -468,44 +448,21 @@ func codeVulnScanDetails(linkMap map[string]int, r *Report, pdf *gofpdf.Fpdf) {
 	pageWidth, _ := pdf.GetPageSize()
 	marginLeft, _, marginRight, _ := pdf.GetMargins()
 	usableWidth := pageWidth - marginLeft - marginRight
-	vulnTypes := []struct {
-		name       string
-		vulns      []codeScanner.Vulnerability
-		isCritical bool
-	}{
-		{"Remote Code Execution (RCE)", r.CodeReport.RCE, true},
-		{"Child Process Execution", r.CodeReport.ChildProcess, true},
-		{"VM Module Usage", r.CodeReport.VmModule, true},
-		{"Function Constructor Usage", r.CodeReport.FunctionConstructor, true},
-		{"Hardcoded Secrets", r.CodeReport.HardcodedSecrets, true},
-		{"AWS Keys Exposure", r.CodeReport.AWSKeys, true},
-		{"JWT Secrets Exposure", r.CodeReport.JWTSecrets, true},
-		{"Database URL Exposure", r.CodeReport.DBUrl, true},
-		{"Comments Secrets", r.CodeReport.CommentsSecrets, true},
-		{"API Key Exposure", r.CodeReport.ApiKey, true},
-		{"Cross-Site Scripting (XSS)", append(r.CodeReport.DSetHTML, append(r.CodeReport.EventHandlers, r.CodeReport.JavaScriptURLs...)...), false},
-		{"React Security Issues", append(r.CodeReport.ReactRefsBypass, append(r.CodeReport.NextJSScriptBypass, r.CodeReport.NextJSHeadBypass...)...), false},
-		{"Server-Side Rendering Issues", append(r.CodeReport.ServerSideBypass, r.CodeReport.NextJSMiddleware...), false},
-		{"Dynamic Imports", r.CodeReport.DynamicImports, false},
-		{"CORS Issues", append(r.CodeReport.CORS, r.CodeReport.CorsCredentials...), false},
-		{"HTTP Methods", r.CodeReport.Methods, false},
-	}
+	vulnTypes := getCodeVulnTypes(r.CodeReport)
+
 	for _, vulnType := range vulnTypes {
 		if len(vulnType.vulns) == 0 {
 			continue
 		}
 		pdf.SetY(pdf.GetY() + line)
-		for i, vuln := range vulnType.vulns {
-			if i != 0 {
-				pdf.AddPage()
-			}
+
+		for _, vuln := range vulnType.vulns {
 			cleanPath := strings.TrimPrefix(vuln.Path, "tmp/")
 			vulnID := fmt.Sprintf("%s:L%d", cleanPath, vuln.Line)
 
 			heading3(vulnType.name, pdf)
 			pdf.SetY(pdf.GetY() + smLine)
 
-			// Set the link destination
 			if linkID, exists := linkMap[vulnID]; exists {
 				pdf.SetLink(linkID, 0, pdf.PageNo())
 			}
@@ -526,8 +483,29 @@ func codeVulnScanDetails(linkMap map[string]int, r *Report, pdf *gofpdf.Fpdf) {
 			pdf.SetFont("Courier", "", 9)
 			pdf.SetFillColor(245, 245, 245)
 			pdf.MultiCell(usableWidth, 5, vuln.Content, "1", "L", true)
-			pdf.SetY(pdf.GetY() + smLine)
+			pdf.SetY(pdf.GetY() + bgLine) // Added proper spacing after each vulnerability
 		}
+	}
+}
+
+func getCodeVulnTypes(report *codeScanner.CodeScanReport) []vulnTypeConfig {
+	return []vulnTypeConfig{
+		{"Remote Code Execution (RCE)", report.RCE, true},
+		{"Child Process Execution", report.ChildProcess, true},
+		{"VM Module Usage", report.VmModule, true},
+		{"Function Constructor Usage", report.FunctionConstructor, true},
+		{"Hardcoded Secrets", report.HardcodedSecrets, true},
+		{"AWS Keys Exposure", report.AWSKeys, true},
+		{"JWT Secrets Exposure", report.JWTSecrets, true},
+		{"Database URL Exposure", report.DBUrl, true},
+		{"Comments Secrets", report.CommentsSecrets, true},
+		{"API Key Exposure", report.ApiKey, true},
+		{"Cross-Site Scripting (XSS)", append(report.DSetHTML, append(report.EventHandlers, report.JavaScriptURLs...)...), false},
+		{"React Security Issues", append(report.ReactRefsBypass, append(report.NextJSScriptBypass, report.NextJSHeadBypass...)...), false},
+		{"Server-Side Rendering Issues", append(report.ServerSideBypass, report.NextJSMiddleware...), false},
+		{"Dynamic Imports", report.DynamicImports, false},
+		{"CORS Issues", append(report.CORS, report.CorsCredentials...), false},
+		{"HTTP Methods", report.Methods, false},
 	}
 }
 
