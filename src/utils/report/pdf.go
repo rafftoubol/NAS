@@ -140,6 +140,7 @@ func GeneratePDF(r *Report, n *utils.Next, c *config.Config) error {
 	pdf.SetY(pdf.GetY() + bgLine)
 
 	// Code Scan Part
+	heading2("Dependencies Scan", pdf)
 	pdf.SetY(pdf.GetY() + line)
 	if c.CodeScan {
 		codeScanResult(r, linkMap, pdf)
