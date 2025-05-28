@@ -18,28 +18,28 @@ type Vulnerability struct {
 
 // CodeScanReport contains all detected vulnerabilities categorized by type
 type CodeScanReport struct {
-	Methods             []Vulnerability // HTTP method detections
-	CORS                []Vulnerability // Open CORS vulnerabilities
-	CorsCredentials     []Vulnerability // CORS with credentials enabled
-	RCE                 []Vulnerability // Remote Code Execution vulnerabilities
-	ApiKey              []Vulnerability // Hardcoded API keys
-	CommentsSecrets     []Vulnerability // Secrets exposed in comments
-	FunctionConstructor []Vulnerability // Function constructor usage (RCE risk)
-	VmModule            []Vulnerability // VM module usage (RCE risk)
-	HardcodedSecrets    []Vulnerability // Hardcoded secrets and passwords
-	AWSKeys             []Vulnerability // AWS access key exposures
-	JWTSecrets          []Vulnerability // JWT secret exposures
-	DBUrl               []Vulnerability // Database URL exposures
-	ChildProcess        []Vulnerability // Child process execution (RCE risk)
-	DSetHTML            []Vulnerability // React dangerouslySetInnerHTML usage
-	ReactRefsBypass     []Vulnerability // React refs bypassing sanitization
-	NextJSScriptBypass  []Vulnerability // Next.js Script component bypasses
-	NextJSHeadBypass    []Vulnerability // Next.js Head component bypasses
-	DynamicImports      []Vulnerability // Unsafe dynamic imports
-	EventHandlers       []Vulnerability // Inline event handlers (XSS risk)
-	JavaScriptURLs      []Vulnerability // JavaScript: URLs in href/src
-	ServerSideBypass    []Vulnerability // Server-side rendering bypasses
-	NextJSMiddleware    []Vulnerability // Next.js middleware vulnerabilities
+	Methods             []Vulnerability `display:"HTTP Methods"`                 // HTTP method detections
+	CORS                []Vulnerability `display:"CORS Vulnerabilities"`         // Open CORS vulnerabilities
+	CorsCredentials     []Vulnerability `display:"CORS with Credentials"`        // CORS with credentials enabled
+	RCE                 []Vulnerability `display:"Remote Code Execution"`        // Remote Code Execution vulnerabilities
+	ApiKey              []Vulnerability `display:"Hardcoded API Keys"`           // Hardcoded API keys
+	CommentsSecrets     []Vulnerability `display:"Secrets in Comments"`          // Secrets exposed in comments
+	FunctionConstructor []Vulnerability `display:"Function Constructor Usage"`   // Function constructor usage (RCE risk)
+	VmModule            []Vulnerability `display:"VM Module Usage"`              // VM module usage (RCE risk)
+	HardcodedSecrets    []Vulnerability `display:"Hardcoded Secrets"`            // Hardcoded secrets and passwords
+	AWSKeys             []Vulnerability `display:"AWS Access Keys"`              // AWS access key exposures
+	JWTSecrets          []Vulnerability `display:"JWT Secret Exposures"`         // JWT secret exposures
+	DBUrl               []Vulnerability `display:"Database URL Exposures"`       // Database URL exposures
+	ChildProcess        []Vulnerability `display:"Child Process Execution"`      // Child process execution (RCE risk)
+	DSetHTML            []Vulnerability `display:"Dangerous HTML Injection"`     // React dangerouslySetInnerHTML usage
+	ReactRefsBypass     []Vulnerability `display:"React Refs Bypass"`            // React refs bypassing sanitization
+	NextJSScriptBypass  []Vulnerability `display:"Next.js Script Bypass"`        // Next.js Script component bypasses
+	NextJSHeadBypass    []Vulnerability `display:"Next.js Head Bypass"`          // Next.js Head component bypasses
+	DynamicImports      []Vulnerability `display:"Unsafe Dynamic Imports"`       // Unsafe dynamic imports
+	EventHandlers       []Vulnerability `display:"Inline Event Handlers"`        // Inline event handlers (XSS risk)
+	JavaScriptURLs      []Vulnerability `display:"JavaScript URLs"`              // JavaScript: URLs in href/src
+	ServerSideBypass    []Vulnerability `display:"Server-Side Rendering Bypass"` // Server-side rendering bypasses
+	NextJSMiddleware    []Vulnerability `display:"Next.js Middleware Issues"`    // Next.js middleware vulnerabilities
 }
 
 // ScanFile reads a single file and detects HTTP methods & security vulnerabilities

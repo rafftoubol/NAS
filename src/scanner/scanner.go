@@ -14,6 +14,7 @@ import (
 	"attack-surface/src/utils/config"
 	"attack-surface/src/utils/report"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/fatih/color"
@@ -136,19 +137,109 @@ func (b *Scanner) Print() error {
 		}
 	}
 
-	// Draft, change how we check if is empty and how we print it.
-	if len(b.report.CodeReport.Methods) > 0 || len(b.report.CodeReport.CORS) > 0 || len(b.report.CodeReport.RCE) > 0 ||
-		len(b.report.CodeReport.ApiKey) > 0 || len(b.report.CodeReport.CommentsSecrets) > 0 {
-		logrus.Infoln("Methods ", b.report.CodeReport.Methods)
-		logrus.Infoln("CORS ", b.report.CodeReport.CORS)
-		logrus.Infoln("RCE ", b.report.CodeReport.RCE)
-		logrus.Infoln("ApiKey ", b.report.CodeReport.ApiKey)
-		logrus.Infoln("CoomentsSecrets ", b.report.CodeReport.CommentsSecrets)
-	}
+	/*
+		Everything from here till the final return is just for printing the results of the code scanner!!!!!
+	*/
+	reportValue := reflect.ValueOf(b.report.CodeReport).Elem()
+	reportType := reflect.TypeOf(b.report.CodeReport).Elem()
+	/*
+	   Basically all we are doing is checking if debugging is set, if it is then we are creating a table of elements and
+	   flattening it into one logrus message which shows the detailed information for each element from every field,
+	   we also trim off all the json things like {} "" and character escaping.
 
-	// Here put report logic
-	// Change in the future
-	// This control that we have this
+	   if debugging is not set we just do a simple check for how many items in each element.
+	*/
+	if logrus.GetLevel() >= logrus.DebugLevel {
+		for i := 0; i < reportValue.NumField(); i++ {
+			// Assign some local variables for stuff
+			field := reportValue.Field(i)
+			fieldType := reportType.Field(i)
+			displayName := fieldType.Tag.Get("display")
+
+			if field.Kind() == reflect.Slice && field.Len() > 0 {
+
+				// Create a table for verbose printing
+
+				title := fmt.Sprintf(" %s (%d found) ", displayName, field.Len())
+				tableWidth := 60 // Fixed width for consistency
+				var tableOutput strings.Builder
+				tableOutput.WriteString(strings.Repeat("=", tableWidth) + "\n")
+				padding := (tableWidth - len(title)) / 2
+				tableOutput.WriteString("=" + strings.Repeat(" ", padding) + title + strings.Repeat(" ", tableWidth-padding-len(title)-2) + "=\n")
+				tableOutput.WriteString(strings.Repeat("=", tableWidth) + "\n")
+
+				// Add all vulnerabilities
+				for j := 0; j < field.Len(); j++ {
+					item := field.Index(j).Interface()
+
+					tableOutput.WriteString(fmt.Sprintf("  [%d]\n", j+1))
+
+					// Extract clean values based on type
+					switch v := item.(type) {
+					case string:
+						tableOutput.WriteString(fmt.Sprintf("    %s\n", v))
+					case map[string]interface{}:
+						for key, value := range v {
+							valueStr := fmt.Sprintf("%v", value)
+							valueStr = strings.ReplaceAll(valueStr, "\\u003c", "<")
+							valueStr = strings.ReplaceAll(valueStr, "\\u003e", ">")
+							valueStr = strings.ReplaceAll(valueStr, "\\", "")
+							tableOutput.WriteString(fmt.Sprintf("    %s: %s\n", key, valueStr))
+						}
+					default:
+						itemValue := reflect.ValueOf(item)
+						itemType := reflect.TypeOf(item)
+
+						if itemValue.Kind() == reflect.Struct {
+							for k := 0; k < itemValue.NumField(); k++ {
+								fieldVal := itemValue.Field(k)
+								fieldName := itemType.Field(k).Name
+
+								valueStr := fmt.Sprintf("%v", fieldVal.Interface())
+								valueStr = strings.ReplaceAll(valueStr, "\\u003c", "<")
+								valueStr = strings.ReplaceAll(valueStr, "\\u003e", ">")
+								valueStr = strings.ReplaceAll(valueStr, "\\", "")
+
+								tableOutput.WriteString(fmt.Sprintf("    %s: %s\n", fieldName, valueStr))
+							}
+						}
+					}
+				}
+
+				// Bottom border
+				tableOutput.WriteString(strings.Repeat("=", tableWidth) + "\n\n")
+
+				// Print the entire table as one logrus message
+				logrus.Info("\n" + strings.TrimSuffix(tableOutput.String(), "\n"))
+			}
+		}
+	} else {
+		/*
+			This is for the normal output where we just print the total number of vulnerabilities for each category
+			of the struct
+		*/
+		totalVulns := 0
+
+		for i := 0; i < reportValue.NumField(); i++ {
+			field := reportValue.Field(i)
+			fieldType := reportType.Field(i)
+
+			// Get the display name from tag, fallback to field name
+			displayName := fieldType.Tag.Get("display")
+			if displayName == "" {
+				displayName = fieldType.Name
+			}
+
+			if field.Kind() == reflect.Slice {
+				count := field.Len()
+				if count > 0 {
+					logrus.Infof("%s: %d", displayName, count)
+					totalVulns += count
+				}
+			}
+		}
+
+	}
 
 	return report.GeneratePDF(b.report, b.next, b.config)
 }
