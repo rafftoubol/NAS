@@ -8,10 +8,11 @@ import (
 )
 
 var (
-	OutputPath string
-	verbose    bool
-
-	rootCmd = &cobra.Command{
+	OutputPath          string
+	verbose             bool
+	PerformanceTracking bool
+	performanceMonitor  *utils.PerformanceMonitor
+	rootCmd             = &cobra.Command{
 		Use:   "nas",
 		Short: "",
 		Long:  "",
@@ -23,20 +24,31 @@ var (
 )
 
 func Execute() {
-	if err := rootCmd.Execute(); err != nil {
+	err := rootCmd.Execute()
+
+	if PerformanceTracking && performanceMonitor != nil {
+		performanceMonitor.Stop()
+	}
+
+	if err != nil {
 		os.Exit(1)
 	}
+
 }
 
 func init() {
 	cobra.OnInitialize(initProject)
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Display additional information")
+	rootCmd.PersistentFlags().BoolVarP(&PerformanceTracking, "performance", "p", false, "Display additional information about the performance of the scanner")
+
 	rootCmd.PersistentFlags().StringVarP(&OutputPath, "report", "o", "./report.pdf", "Output path for the results")
 }
 
 func initProject() {
-
+	if PerformanceTracking {
+		performanceMonitor = utils.NewPerformanceMonitor()
+	}
 	fmt.Println("\033[31m" + ` ________   ________  ________      
 |\   ___  \|\   __  \|\   ____\     
 \ \  \\ \  \ \  \|\  \ \  \___|_    
@@ -46,5 +58,4 @@ func initProject() {
     \|__| \|__|\|__|\|__|\_________\
                         \|_________|` + "\033[0m")
 	utils.SetUpLogger(verbose)
-
 }
