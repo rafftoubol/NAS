@@ -3,16 +3,14 @@ package utils
 import (
 	"fmt"
 	"github.com/fatih/color"
-	"github.com/pkg/profile"
 	"github.com/sirupsen/logrus"
 	"runtime"
 	"time"
 )
 
 type PerformanceMonitor struct {
-	startTime    time.Time
-	startMem     runtime.MemStats
-	profilerStop func()
+	startTime time.Time
+	startMem  runtime.MemStats
 }
 
 func NewPerformanceMonitor() *PerformanceMonitor {
@@ -20,14 +18,6 @@ func NewPerformanceMonitor() *PerformanceMonitor {
 		startTime: time.Now(),
 	}
 
-	pm.profilerStop = profile.Start(
-		profile.CPUProfile,
-		profile.MemProfile,
-		profile.ProfilePath("./performance"),
-		profile.NoShutdownHook,
-	).Stop
-
-	runtime.GC()
 	runtime.ReadMemStats(&pm.startMem)
 
 	return pm
@@ -36,10 +26,6 @@ func NewPerformanceMonitor() *PerformanceMonitor {
 func (pm *PerformanceMonitor) Stop() {
 	if pm == nil {
 		return
-	}
-
-	if pm.profilerStop != nil {
-		pm.profilerStop()
 	}
 
 	pm.printReport()

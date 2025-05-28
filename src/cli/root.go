@@ -31,7 +31,6 @@ func Execute() {
 	}
 
 	if err != nil {
-
 		os.Exit(1)
 	}
 
