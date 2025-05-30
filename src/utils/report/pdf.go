@@ -7,6 +7,7 @@ import (
 	"attack-surface/src/utils/config"
 	"fmt"
 	"os"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -24,9 +25,8 @@ type Report struct {
 }
 
 type vulnTypeConfig struct {
-	name       string
-	vulns      []codeScanner.Vulnerability
-	isCritical bool
+	name  string
+	vulns []codeScanner.Vulnerability
 }
 
 var (
@@ -170,7 +170,7 @@ func GeneratePDF(r *Report, n *utils.Next, c *config.Config) error {
 	}
 
 	input := []string{"src/utils/report/cover.pdf", "generated.pdf"}
-	if err := api.MergeCreateFile(input, "report.pdf", false, nil); err != nil {
+	if err := api.MergeCreateFile(input, c.OutputPath, false, nil); err != nil {
 		return err
 	}
 	if err := os.Remove("generated.pdf"); err != nil {
@@ -384,11 +384,7 @@ func codeScanResult(r *Report, linkMap map[string]int, pdf *gofpdf.Fpdf) {
 			continue
 		}
 
-		if vulnType.isCritical {
-			pdf.SetFillColor(180, 50, 50)
-		} else {
-			pdf.SetFillColor(138, 41, 84)
-		}
+		pdf.SetFillColor(180, 50, 50)
 
 		pdf.SetFont("BubisNeue", "", 14)
 		typeTitle := fmt.Sprintf("%s (%d issues)", vulnType.name, len(vulnType.vulns))
@@ -486,35 +482,50 @@ func codeVulnScanDetails(linkMap map[string]int, r *Report, pdf *gofpdf.Fpdf) {
 }
 
 func getCodeVulnTypes(report *codeScanner.CodeScanReport) []vulnTypeConfig {
-	return []vulnTypeConfig{
-		{"Remote Code Execution (RCE)", report.RCE, true},
-		{"Child Process Execution", report.ChildProcess, true},
-		{"VM Module Usage", report.VmModule, true},
-		{"Function Constructor Usage", report.FunctionConstructor, true},
-		{"Hardcoded Secrets", report.HardcodedSecrets, true},
-		{"AWS Keys Exposure", report.AWSKeys, true},
-		{"JWT Secrets Exposure", report.JWTSecrets, true},
-		{"Database URL Exposure", report.DBUrl, true},
-		{"Comments Secrets", report.CommentsSecrets, true},
-		{"API Key Exposure", report.ApiKey, true},
-		{"Cross-Site Scripting (XSS)", append(report.DSetHTML, append(report.EventHandlers, report.JavaScriptURLs...)...), false},
-		{"React Security Issues", append(report.ReactRefsBypass, append(report.NextJSScriptBypass, report.NextJSHeadBypass...)...), false},
-		{"Server-Side Rendering Issues", append(report.ServerSideBypass, report.NextJSMiddleware...), false},
-		{"Dynamic Imports", report.DynamicImports, false},
-		{"CORS Issues", append(report.CORS, report.CorsCredentials...), false},
-		{"HTTP Methods", report.Methods, false},
-	}
-}
+	configs := []vulnTypeConfig{}
 
+	v := reflect.ValueOf(report).Elem() // Use .Elem() since it's a pointer
+	t := reflect.TypeOf(report).Elem()
+
+	for i := 0; i < v.NumField(); i++ {
+		field := t.Field(i)
+		fieldValue := v.Field(i)
+
+		// Skip if field is not a slice or is empty
+		if fieldValue.Kind() != reflect.Slice || fieldValue.Len() == 0 {
+			continue
+		}
+
+		// Get display name from struct tag
+		displayName := field.Tag.Get("display")
+		if displayName == "" {
+			continue // Skip fields without display tag
+		}
+
+		// Cast to the correct type
+		vulnerabilities := fieldValue.Interface().([]codeScanner.Vulnerability)
+		configs = append(configs, vulnTypeConfig{
+			displayName,
+			vulnerabilities,
+		})
+	}
+
+	return configs
+}
 func countCodeVulnerabilities(report *codeScanner.CodeScanReport) int {
-	return len(report.Methods) + len(report.CORS) + len(report.CorsCredentials) +
-		len(report.RCE) + len(report.ApiKey) + len(report.CommentsSecrets) +
-		len(report.FunctionConstructor) + len(report.VmModule) + len(report.HardcodedSecrets) +
-		len(report.AWSKeys) + len(report.JWTSecrets) + len(report.DBUrl) +
-		len(report.ChildProcess) + len(report.DSetHTML) + len(report.ReactRefsBypass) +
-		len(report.NextJSScriptBypass) + len(report.NextJSHeadBypass) + len(report.DynamicImports) +
-		len(report.EventHandlers) + len(report.JavaScriptURLs) + len(report.ServerSideBypass) +
-		len(report.NextJSMiddleware)
+	count := 0
+	v := reflect.ValueOf(report).Elem() // Use .Elem() since it's a pointer
+
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+
+		// Check if field is a slice and add its length
+		if field.Kind() == reflect.Slice {
+			count += field.Len()
+		}
+	}
+
+	return count
 }
 
 func vulnScanDetails(linkMap map[string]int, r *Report, pdf *gofpdf.Fpdf) {

@@ -111,9 +111,14 @@ func ScanFile(path string) (*CodeScanReport, error) {
 	// Unsafe dynamic imports with user input
 	reDynamicImports := regexp.MustCompile(`(?i)import\s*\(\s*['` + "`" + `"]?\\\$\{.*?\}['` + "`" + `"]?\s*\)|import\s*\(\s*` + "`" + `[^` + "`" + `]*\\\$\{[^}]*\}[^` + "`" + `]*` + "`" + `\s*\)`)
 
-	// Inline event handlers (XSS risk)
-	reEventHandlers := regexp.MustCompile(`(?i)(onclick|onload|onerror|onmouseover|onfocus|onblur|onchange|onsubmit|on[a-z]+)\s*=\s*\{.*?\}`)
+	// Event handlers with eval
+	reEventHandlerEval := regexp.MustCompile(`(?i)(on[a-z]+)\s*=\s*\{[^}]*eval\s*\([^}]*\}`)
 
+	// Event handlers with innerHTML
+	reEventHandlerInnerHTML := regexp.MustCompile(`(?i)(on[a-z]+)\s*=\s*\{[^}]*innerHTML[^}]*\}`)
+
+	// Event handlers with dynamic function calls (more complex)
+	reEventHandlerDynamic := regexp.MustCompile(`(?i)(on[a-z]+)\s*=\s*\{[^}]*(?:Function\s*\(|setTimeout\s*\([^'"][^}]*|setInterval\s*\([^'"][^}]*)\}`)
 	// JavaScript: URLs in href/src attributes
 	reJavaScriptURLs := regexp.MustCompile(`(?i)(href|src)\s*=\s*\{?\s*['` + "`" + `"]?\s*javascript:`)
 
@@ -303,7 +308,23 @@ func ScanFile(path string) (*CodeScanReport, error) {
 		}
 
 		// Inline event handlers
-		if reEventHandlers.MatchString(line) {
+		if reEventHandlerEval.MatchString(line) {
+			eventHandlers = append(eventHandlers, Vulnerability{
+				Type:    "InlineEventHandler",
+				Content: line,
+				Path:    path,
+				Line:    lineNum,
+			})
+		}
+		if reEventHandlerInnerHTML.MatchString(line) {
+			eventHandlers = append(eventHandlers, Vulnerability{
+				Type:    "InlineEventHandler",
+				Content: line,
+				Path:    path,
+				Line:    lineNum,
+			})
+		}
+		if reEventHandlerDynamic.MatchString(line) {
 			eventHandlers = append(eventHandlers, Vulnerability{
 				Type:    "InlineEventHandler",
 				Content: line,
