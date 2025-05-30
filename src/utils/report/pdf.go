@@ -482,7 +482,7 @@ func codeVulnScanDetails(linkMap map[string]int, r *Report, pdf *gofpdf.Fpdf) {
 }
 
 func getCodeVulnTypes(report *codeScanner.CodeScanReport) []vulnTypeConfig {
-	configs := []vulnTypeConfig{}
+	var configs []vulnTypeConfig
 
 	v := reflect.ValueOf(report).Elem() // Use .Elem() since it's a pointer
 	t := reflect.TypeOf(report).Elem()
