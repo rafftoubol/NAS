@@ -9,7 +9,7 @@ import (
 
 var dependenciesCmd = &cobra.Command{
 	Use:   "dependencies [project path]",
-	Short: "Lists all dependencies of a project",
+	Short: "Discovers vulnerable packages in the Next.js project",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		projectPath := args[0]

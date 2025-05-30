@@ -91,9 +91,17 @@ func (b *Scanner) Scan() error {
 
 		b.report.CodeReport = codeReport
 
-		// Draft, change how we check if is empty
-		if len(b.report.CodeReport.Methods) == 0 || len(b.report.CodeReport.CORS) == 0 || len(b.report.CodeReport.RCE) == 0 ||
-			len(b.report.CodeReport.ApiKey) == 0 || len(b.report.CodeReport.CommentsSecrets) == 0 {
+		// Check if any vulnerabilities were found using reflection
+		count := 0
+		v := reflect.ValueOf(b.report.CodeReport).Elem()
+		for i := 0; i < v.NumField(); i++ {
+			field := v.Field(i)
+			if field.Kind() == reflect.Slice {
+				count += field.Len()
+			}
+		}
+
+		if count == 0 {
 			logrus.Info("Code Scan found no Vulnerabilities")
 		}
 	} else {
