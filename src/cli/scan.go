@@ -28,7 +28,10 @@ var fullScanCmd = &cobra.Command{
 		}
 
 		// Scanner Creation
-		scanner := scanner.NewScanner(cfg)
+		scanner, err := scanner.NewScanner(cfg)
+		if err != nil {
+			logrus.Fatalln(err)
+		}
 		// Execute Scanner
 		if err := scanner.Scan(); err != nil {
 			logrus.Fatalln(err)

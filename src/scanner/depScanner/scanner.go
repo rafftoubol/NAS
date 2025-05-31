@@ -1,6 +1,7 @@
 /*
-The purpose of this file is to reshape next.dependencies, and next.devDependencies into a OSV-DepScanner payload so that
-we can simply curl a batch of packages and versions, receive the response as json
+The purpose of this file is to reshape next.dependencies, and
+next.devDependencies into the OSV-DepScanner payload so that we can simply curl a
+batch of packages and versions, receive the response as json
 
 PRE: Defined and filled Next struct (next)
 POST: Struct with vulnerabilities
@@ -15,10 +16,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/schollz/progressbar/v3"
 	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
 	"strings"
+	"time"
 )
 
 // OSVQuery Struct for specifying a package in the API
@@ -36,12 +39,16 @@ type OSVBatchRequest struct {
 }
 
 type Vuln struct {
-	ID       string `json:"id"`
-	Modified string `json:"modified"`
+	ID       string   `json:"id"`
+	Aliases  []string `json:"aliases"`
+	Modified string   `json:"modified"`
+	Details  string   `json:"details,omitempty"`
+	Summary  string   `json:"summary,omitempty"`
 }
 
 type Result struct {
-	Vulns []Vuln `json:"vulns,omitempty"`
+	Vulns       []Vuln `json:"vulns,omitempty"`
+	PackageName string `json:"package_name,omitempty"`
 }
 
 type Response struct {
@@ -49,8 +56,9 @@ type Response struct {
 }
 
 /*
-DepScanner this function forms the dependencies and makes the request to the OSV API,
-when we have more scan function we can rename this to dependency scanner, and wrap it in another func - scanner again
+DepScanner this function forms the dependencies and makes the request to the OSV
+API, when we have more scan function we can rename this to dependency scanner,
+and wrap it in another func - scanner again
 */
 func DepScanner(dependenciesMap map[string]string) (*Response, error) {
 	//dependenciesMap := utils.GlobalNext.Dependencies
@@ -62,7 +70,7 @@ func DepScanner(dependenciesMap map[string]string) (*Response, error) {
 		return nil, err
 	}
 
-	resBody, err := OSVRequestHandler(queries)
+	resBody, err := OSVIDFetcher(queries)
 	if err != nil {
 		return nil, err
 	}
@@ -74,11 +82,23 @@ func DepScanner(dependenciesMap map[string]string) (*Response, error) {
 		return nil, fmt.Errorf("errore nel parsing JSON: %w", err)
 	}
 
+	for i, query := range queries {
+		if i < len(depReport.Results) {
+			depReport.Results[i].PackageName = fmt.Sprintf("%s@%s", query.Package.Name, query.Version)
+		}
+	}
+
 	// Format and print JSON response
 	var prettyJSON bytes.Buffer
 	err = json.Indent(&prettyJSON, resBody, "", "  ")
 	if err != nil {
 		return nil, fmt.Errorf("Error formatting JSON: %w ", err)
+	}
+
+	// Call OSVDetailFetcher to fetch details for the vulnerabilities
+	err = OSVDetailFetcher(&depReport)
+	if err != nil {
+		logrus.Errorf("Error fetching vulnerability details: %v\n", err)
 	}
 
 	return &depReport, nil
@@ -115,13 +135,13 @@ func DependencyMapper(dependencies map[string]string) []OSVQuery {
 }
 
 /*
-OSVRequestHandler this functions purpose is to make batch requests to the OSV API, determining vulnerabilities,
-returning JSON of CVSS
+OSVIDFetcher this functions purpose is to make batch requests to the OSV API,
+determining vulnerabilities, returning JSON of CVSS
 
 PRE: already shaped OSVQueries from the dependency Mapper
 POST: Either the JSON Response as bytes or an error
 */
-func OSVRequestHandler(queries []OSVQuery) ([]byte, error) {
+func OSVIDFetcher(queries []OSVQuery) ([]byte, error) {
 	OSVRequest := OSVBatchRequest{
 		Queries: queries,
 	}
@@ -147,7 +167,6 @@ func OSVRequestHandler(queries []OSVQuery) ([]byte, error) {
 			logrus.Errorln("Error reading response: ", err)
 		}
 	}(resp.Body)
-
 	// Read the response
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -155,6 +174,148 @@ func OSVRequestHandler(queries []OSVQuery) ([]byte, error) {
 	}
 
 	return body, nil
+}
+
+/*
+OSVDetailFetcher A function to take the vulnerability ID's and loop through
+fetching the details, the intended use case in this application is to take a
+pointer to a response object and then update that response object inside the
+caller function, that's why we don't explicitly have a return other than error
+
+We also do the http fetching in a seperate function to the for loop that way we
+do not defer resp.body.close() inside the for loop leaving every single response
+body.io open till the for loop executes...
+*/
+func OSVDetailFetcher(response *Response) error {
+	client := &http.Client{
+		Timeout: time.Second * 10,
+	}
+	// Get the number of packages and vulnerabilities
+	vulnCount := 0
+	vulnPkgCount := 0
+	for _, result := range response.Results {
+		if len(result.Vulns) > 0 {
+			vulnPkgCount++
+			vulnCount += len(result.Vulns)
+		}
+	}
+	logrus.Infof("Packages analyzed:      %d", len(response.Results))
+	logrus.Infof("Vulnerable packages:    %d", vulnPkgCount)
+	logrus.Infof("Total vulnerabilities:  %d", vulnCount)
+
+	if vulnCount == 0 {
+		return nil
+	}
+
+	bar := progressbar.NewOptions(vulnCount,
+		progressbar.OptionSetDescription("Fetching vuln details..."),
+		progressbar.OptionShowCount(),
+		progressbar.OptionSetWidth(40),
+		progressbar.OptionSetPredictTime(false),
+		progressbar.OptionSetTheme(progressbar.Theme{
+			Saucer:        "=",
+			SaucerPadding: " ",
+			BarStart:      "[",
+			BarEnd:        "]",
+		}))
+
+	// Iterate through each Result in the response
+	for i := range response.Results {
+		// Iterate through each Vuln in the current Result
+		for j := range response.Results[i].Vulns {
+			// Get a reference to the current Vuln to modify it
+			vuln := &response.Results[i].Vulns[j]
+			// Fetch and assign the details to this specific vulnerability
+			err := fetchAndAssignVulnDetail(client, vuln)
+			if err != nil {
+				return err
+			}
+			bar.Add(1)
+		}
+	}
+
+	bar.Finish()
+	fmt.Println()
+	return nil
+}
+
+/*
+fetchAndAssignVulnDetail This Function basically handles a single http clients
+rest query for a single vulnerability. we then take that response map it to a
+temporary array and then into our vuln struct, we do this in its own function so
+that we can close the response body at the end of its usage.
+*/
+
+func fetchAndAssignVulnDetail(client *http.Client, vuln *Vuln) error {
+	// Create URL with the vulnerability ID
+	url := fmt.Sprintf("https://api.osv.dev/v1/vulns/%s", vuln.ID)
+	//fmt.Println("Fetching details for:", vuln.ID) // For debugging
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			logrus.Errorf("Error closing response: %v", err)
+		}
+	}(resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		return err
+	}
+
+	// Use a map to decode the JSON response
+	var detailMap map[string]interface{}
+	err = json.NewDecoder(resp.Body).Decode(&detailMap)
+	if err != nil {
+		return err
+	}
+
+	// Extract fields directly from the map
+	if summary, ok := detailMap["summary"].(string); ok {
+		vuln.Summary = summary
+	}
+
+	if details, ok := detailMap["details"].(string); ok {
+		vuln.Details = details
+	}
+
+	// Extract aliases
+	var combinedAliases []string
+
+	// Get the original aliases
+	if aliases, ok := detailMap["aliases"].([]interface{}); ok {
+		for _, alias := range aliases {
+			if aliasStr, ok := alias.(string); ok {
+				combinedAliases = append(combinedAliases, aliasStr)
+			}
+		}
+	}
+
+	// Get CWE IDs from database_specific
+	if dbSpecific, ok := detailMap["database_specific"].(map[string]interface{}); ok {
+		if cweIDs, ok := dbSpecific["cwe_ids"].([]interface{}); ok {
+			for _, cweID := range cweIDs {
+				if cweIDStr, ok := cweID.(string); ok {
+					combinedAliases = append(combinedAliases, cweIDStr)
+				}
+			}
+		}
+	}
+
+	// Only update the aliases if we found some
+	if len(combinedAliases) > 0 {
+		vuln.Aliases = combinedAliases
+	}
+
+	return nil
 }
 
 /*
@@ -178,8 +339,5 @@ func prettyPrintRequest(queries []OSVQuery) error {
 	if err != nil {
 		return fmt.Errorf("Error formatting JSON: %w ", err)
 	}
-
-	//logrus.Infof("OSV API Request Payload: %v", prettyJSON.String())
-
 	return nil
 }

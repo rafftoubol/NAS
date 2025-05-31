@@ -14,22 +14,35 @@ import (
 	"attack-surface/src/utils/config"
 	"attack-surface/src/utils/report"
 	"fmt"
+	"reflect"
+	"strings"
+
+	"github.com/fatih/color"
 	"github.com/sirupsen/logrus"
 )
 
 type Scanner struct {
 	config *config.Config
 	report *report.Report
+	next   *utils.Next
 }
 
-func NewScanner(config *config.Config) *Scanner {
+func NewScanner(config *config.Config) (*Scanner, error) {
+	// Parse Next.js -> Validate if is a Next.js Repository
+
+	next, err := utils.InitNext(config.ProjectPath)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Scanner{
 		config: config,
-	}
+		next:   next,
+	}, nil
 }
 
 func (b *Scanner) Scan() error {
-	// To prevent segmentation fault we can create empyt block
+	// To prevent segmentation fault
 	b.report = &report.Report{
 		CodeReport:   &codeScanner.CodeScanReport{},
 		DepReport:    &depScanner.Response{},
@@ -41,25 +54,17 @@ func (b *Scanner) Scan() error {
 
 	// Expand with future cong Options
 	if b.config.DependenciesScan {
-		logrus.Info("Scanning Dependencies")
 
-		// Parse Next.js -> Validate if is a Next.js Repository
-		next, err := utils.InitNext(b.config.ProjectPath)
-		if err != nil {
-			return err
-		}
-		// Scan Dependencies
-		depReport, err := depScanner.DepScanner(next.Dependencies)
-
+		// Run scanner Dependencies
+		logrus.Infof("%s ", color.New(color.FgCyan, color.Bold).Sprint("Scanning Dependencies"))
+		depReport, err := depScanner.DepScanner(b.next.Dependencies)
 		if err != nil {
 			return err
 		}
 
-		if b.report == nil {
-			b.report = &report.Report{}
-		}
-		// Scan DevDependencies
-		depDevReport, err := depScanner.DepScanner(next.DevDependencies)
+		// Run scanner DevDependencies
+		logrus.Infof("%s ", color.New(color.FgCyan, color.Bold).Sprint("Scanning devDependencies"))
+		depDevReport, err := depScanner.DepScanner(b.next.DevDependencies)
 
 		if err != nil {
 			return err
@@ -68,8 +73,6 @@ func (b *Scanner) Scan() error {
 		if b.report == nil {
 			b.report = &report.Report{}
 		}
-		logrus.Debug("Dependency Scan Results: ", depReport)
-		logrus.Debug("DevDependency Scan Results: ", depDevReport)
 		b.report.DepReport = depReport
 		b.report.DepDevReport = depDevReport
 
@@ -78,75 +81,173 @@ func (b *Scanner) Scan() error {
 	}
 
 	if b.config.CodeScan {
-		logrus.Info("Scanning Code")
+		logrus.Infof("%s ", color.New(color.FgCyan, color.Bold).Sprint("Scanning Code"))
+
 		// Run scanner code
 		codeReport, err := codeScanner.CodeScanner(b.config.ProjectPath)
 		if err != nil {
 			return err
 		}
 
-		// Check if b.report has been created
-		if b.report == nil {
-			b.report = &report.Report{}
-		}
-		logrus.Debugf("Code Scan Results: %v", codeReport)
 		b.report.CodeReport = codeReport
 
+		// Check if any vulnerabilities were found using reflection
+		count := 0
+		v := reflect.ValueOf(b.report.CodeReport).Elem()
+		for i := 0; i < v.NumField(); i++ {
+			field := v.Field(i)
+			if field.Kind() == reflect.Slice {
+				count += field.Len()
+			}
+		}
+
+		if count == 0 {
+			logrus.Info("Code Scan found no Vulnerabilities")
+		}
 	} else {
-		logrus.Info("Code Scan is Skipped (Disabled)")
+		logrus.Infoln("Code Scan is Skipped (Disabled)")
 	}
 
-	logrus.Infoln("Scan Successful")
-	logrus.Debug("Generating Report")
+	logrus.Infoln("Scan terminated successfully")
+
 	if err := b.Print(); err != nil {
 		return err
 	}
-	logrus.Infoln("Report Generated")
+	logrus.Infoln("Report generated successfully in", b.config.OutputPath)
+
 	return nil
 }
 
+// POC Function to print the report.
 func (b *Scanner) Print() error {
-	// Temporary -> Logic to print file will be here.
-	// Now just print out Vuln found
+	logrus.Infof("%s", color.New(color.FgMagenta, color.Bold).Sprint("Vulnerability Report "))
+
 	if b.report == nil {
 		return fmt.Errorf("No report found")
 	}
 
 	// Print out devReport
-	for i, result := range b.report.DepReport.Results {
+	for _, result := range b.report.DepReport.Results {
 		if len(result.Vulns) > 0 {
-			logrus.Infof("Package %d found with %d vulnerabilitys:", i, len(result.Vulns))
+			logrus.Infof("Package %s found with %d vulnerabilitys", result.PackageName, len(result.Vulns))
 			for _, vuln := range result.Vulns {
-				logrus.Infof("- ID: %s, Modified: %s", vuln.ID, vuln.Modified)
+				logrus.Debugf("- ID: %-35s   %s", strings.Join(vuln.Aliases, " "), vuln.Summary)
 			}
 		}
 	}
 	// Print out devDevReport
-	for i, result := range b.report.DepDevReport.Results {
+	for _, result := range b.report.DepDevReport.Results {
 		if len(result.Vulns) > 0 {
-			logrus.Infof("Package %d found with %d vulnerabilitys:", i, len(result.Vulns))
+			logrus.Infof("Package %s found with %d vulnerabilitys", result.PackageName, len(result.Vulns))
 			for _, vuln := range result.Vulns {
-				logrus.Infof("- ID: %s, Modified: %s", vuln.ID, vuln.Modified)
+				logrus.Debugf("- ID: %-35s   %s", strings.Join(vuln.Aliases, " "), vuln.Summary)
 			}
 		}
 	}
 
-	if len(b.report.CodeReport.Methods) > 0 || len(b.report.CodeReport.CORS) > 0 || len(b.report.CodeReport.RCE) > 0 ||
-		len(b.report.CodeReport.ApiKey) > 0 || len(b.report.CodeReport.CoomentsSecrets) > 0 {
-		logrus.Println("Methods ", b.report.CodeReport.Methods)
-		logrus.Println("CORS ", b.report.CodeReport.CORS)
-		logrus.Println("RCE ", b.report.CodeReport.RCE)
-		logrus.Println("ApiKey ", b.report.CodeReport.ApiKey)
-		logrus.Println("CoomentsSecrets ", b.report.CodeReport.CoomentsSecrets)
+	/*
+		Everything from here till the final return is just for printing the results of the code scanner!!!!!
+	*/
+	reportValue := reflect.ValueOf(b.report.CodeReport).Elem()
+	reportType := reflect.TypeOf(b.report.CodeReport).Elem()
+	/*
+	   Basically all we are doing is checking if debugging is set, if it is then we are creating a table of elements and
+	   flattening it into one logrus message which shows the detailed information for each element from every field,
+	   we also trim off all the json things like {} "" and character escaping.
+
+	   if debugging is not set we just do a simple check for how many items in each element.
+	*/
+	if logrus.GetLevel() >= logrus.DebugLevel {
+		for i := 0; i < reportValue.NumField(); i++ {
+			// Assign some local variables for stuff
+			field := reportValue.Field(i)
+			fieldType := reportType.Field(i)
+			displayName := fieldType.Tag.Get("display")
+
+			if field.Kind() == reflect.Slice && field.Len() > 0 {
+
+				// Create a table for verbose printing
+
+				title := fmt.Sprintf(" %s (%d found) ", displayName, field.Len())
+				tableWidth := 60 // Fixed width for consistency
+				var tableOutput strings.Builder
+				tableOutput.WriteString(strings.Repeat("=", tableWidth) + "\n")
+				padding := (tableWidth - len(title)) / 2
+				tableOutput.WriteString("=" + strings.Repeat(" ", padding) + title + strings.Repeat(" ", tableWidth-padding-len(title)-2) + "=\n")
+				tableOutput.WriteString(strings.Repeat("=", tableWidth) + "\n")
+
+				// Add all vulnerabilities
+				for j := 0; j < field.Len(); j++ {
+					item := field.Index(j).Interface()
+
+					tableOutput.WriteString(fmt.Sprintf("  [%d]\n", j+1))
+
+					// Extract clean values based on type
+					switch v := item.(type) {
+					case string:
+						tableOutput.WriteString(fmt.Sprintf("    %s\n", v))
+					case map[string]interface{}:
+						for key, value := range v {
+							valueStr := fmt.Sprintf("%v", value)
+							valueStr = strings.ReplaceAll(valueStr, "\\u003c", "<")
+							valueStr = strings.ReplaceAll(valueStr, "\\u003e", ">")
+							valueStr = strings.ReplaceAll(valueStr, "\\", "")
+							tableOutput.WriteString(fmt.Sprintf("    %s: %s\n", key, valueStr))
+						}
+					default:
+						itemValue := reflect.ValueOf(item)
+						itemType := reflect.TypeOf(item)
+
+						if itemValue.Kind() == reflect.Struct {
+							for k := 0; k < itemValue.NumField(); k++ {
+								fieldVal := itemValue.Field(k)
+								fieldName := itemType.Field(k).Name
+
+								valueStr := fmt.Sprintf("%v", fieldVal.Interface())
+								valueStr = strings.ReplaceAll(valueStr, "\\u003c", "<")
+								valueStr = strings.ReplaceAll(valueStr, "\\u003e", ">")
+								valueStr = strings.ReplaceAll(valueStr, "\\", "")
+
+								tableOutput.WriteString(fmt.Sprintf("    %s: %s\n", fieldName, valueStr))
+							}
+						}
+					}
+				}
+
+				// Bottom border
+				tableOutput.WriteString(strings.Repeat("=", tableWidth) + "\n\n")
+
+				// Print the entire table as one logrus message
+				logrus.Info("\n" + strings.TrimSuffix(tableOutput.String(), "\n"))
+			}
+		}
 	} else {
-		logrus.Println("Code Scan: No vulnerabilities found")
+		/*
+			This is for the normal output where we just print the total number of vulnerabilities for each category
+			of the struct
+		*/
+		totalVulns := 0
+
+		for i := 0; i < reportValue.NumField(); i++ {
+			field := reportValue.Field(i)
+			fieldType := reportType.Field(i)
+
+			// Get the display name from tag, fallback to field name
+			displayName := fieldType.Tag.Get("display")
+			if displayName == "" {
+				displayName = fieldType.Name
+			}
+
+			if field.Kind() == reflect.Slice {
+				count := field.Len()
+				if count > 0 {
+					logrus.Infof("%s: %d", displayName, count)
+					totalVulns += count
+				}
+			}
+		}
+
 	}
 
-	// Here put report logic
-	// Change in the future
-	// This control that we have this
-
-	return report.GeneratePDF(b.report, b.config.OutputPath)
-
-	return nil
+	return report.GeneratePDF(b.report, b.next, b.config)
 }

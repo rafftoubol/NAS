@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"io/fs"
 	"os"
 	"path/filepath"
+
+	"github.com/sirupsen/logrus"
 )
 
 /*
@@ -17,6 +18,10 @@ import (
 type Next struct {
 	Name            string            `json:"name"`
 	Version         string            `json:"version"`
+	Description     string            `json:"description"`
+	Author          string            `json:"author"`
+	License         string            `json:"license"`
+	Keyword         []string          `json:"keywords"`
 	Dependencies    map[string]string `json:"dependencies"`
 	DevDependencies map[string]string `json:"devDependencies"`
 	Scripts         map[string]string `json:"scripts"`
@@ -57,6 +62,21 @@ func InitNext(projectPath string) (*Next, error) {
 		return nil, fmt.Errorf("Error reading package.json: %w ", err)
 	}
 
+	if next.Version == "" {
+		next.Version = "N/A"
+	}
+	if next.Description == "" {
+		next.Description = "N/A"
+	}
+	if next.Author == "" {
+		next.Author = "N/A"
+	}
+	if next.License == "" {
+		next.License = "N/A"
+	}
+	if len(next.Keyword) == 0 {
+		next.Keyword = []string{"N/A"}
+	}
 	if next.Dependencies["next"] == "" {
 		return nil, fmt.Errorf("Next.js not found ")
 	}

@@ -9,7 +9,7 @@ import (
 
 var dependenciesCmd = &cobra.Command{
 	Use:   "dependencies [project path]",
-	Short: "Lists all dependencies of a project",
+	Short: "Discovers vulnerable packages in the Next.js project",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		projectPath := args[0]
@@ -29,7 +29,10 @@ var dependenciesCmd = &cobra.Command{
 		}
 
 		// Scanner Creation
-		scanner := scanner.NewScanner(cfg)
+		scanner, err := scanner.NewScanner(cfg)
+		if err != nil {
+			logrus.Fatalln(err)
+		}
 		// Execute Scanner
 		if err := scanner.Scan(); err != nil {
 			logrus.Fatalln(err)
