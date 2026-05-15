@@ -44,12 +44,15 @@ go run main.go config examples/config.yaml -v
 
 ### Features
 
-Feature,Check Box
-Full Software Composition Analysis,[x]
-"Static Analysis for commonly unsafe patterns, lack of sanitization and hardcoded credentials",[x]
-NextJS specific unsafe patterns,[x]
-Intuitive and clean CLI output,[x]
-"Vulnerability report PDF with remediation steps, CVE details, and code snippets",[x]
+### Features
+
+| Feature | Status |
+| :--- | :---: |
+| Full Software Composition Analysis | ✅ |
+| Static Analysis for commonly unsafe patterns, lack of sanitization and hardcoded credentials | ✅ |
+| NextJS specific unsafe patterns | ✅ |
+| Intuitive and clean CLI output | ✅ |
+| Vulnerability report PDF with remediation steps, CVE details, and code snippets | ✅ |
 
 ### To-Do
 Add other framework specific rules.
