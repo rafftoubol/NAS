@@ -5,6 +5,15 @@
 
 NAS _(Next.js Attack Surface)_ is a _Command Line Interface_  to visualize the attack surface of a given Next.js project.
 
+### Features
+
+| Feature | Status |
+| :--- | :---: |
+| Full Software Composition Analysis | ✅ |
+| Static Analysis for commonly unsafe patterns, lack of sanitization and hardcoded credentials | ✅ |
+| NextJS specific unsafe patterns | ✅ |
+| Intuitive and clean CLI output | ✅ |
+| Vulnerability report PDF with remediation steps, CVE details, and code snippets | ✅ |
 
 ## Set Up
 
@@ -41,18 +50,6 @@ Config file example is already present in `examples/config.yaml` with a _Next.js
 ```bash
 go run main.go config examples/config.yaml -v
 ```
-
-### Features
-
-### Features
-
-| Feature | Status |
-| :--- | :---: |
-| Full Software Composition Analysis | ✅ |
-| Static Analysis for commonly unsafe patterns, lack of sanitization and hardcoded credentials | ✅ |
-| NextJS specific unsafe patterns | ✅ |
-| Intuitive and clean CLI output | ✅ |
-| Vulnerability report PDF with remediation steps, CVE details, and code snippets | ✅ |
 
 ### To-Do
 Add other framework specific rules.
