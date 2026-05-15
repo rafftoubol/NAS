@@ -42,29 +42,16 @@ Config file example is already present in `examples/config.yaml` with a _Next.js
 go run main.go config examples/config.yaml -v
 ```
 
-## To Do
+### Features
 
-As a group, we have decided to use **Trello** to organize our tasks and track progress efficiently.
-We also define at least two short meeting per week to review the current status of the Project.
-> Link to our [**Trello**](https://trello.com/invite/b/67ed2da5c478e38b9a5430cc/ATTI9dad446f498775d2001594cd64afe38d696132E6/attack-surface)
+Feature,Check Box
+Full Software Composition Analysis,[x]
+"Static Analysis for commonly unsafe patterns, lack of sanitization and hardcoded credentials",[x]
+NextJS specific unsafe patterns,[x]
+Intuitive and clean CLI output,[x]
+"Vulnerability report PDF with remediation steps, CVE details, and code snippets",[x]
 
-### Our Project Schedule
+### To-Do
+Add other framework specific rules.
+expand SAST ruleset. 
 
-| Week | Tasks                                                                                       |
-|------|---------------------------------------------------------------------------------------------|
-| 4    | Research associated technologies,<br/> Develop CLI Interface, Next.js Parser, Config Parser |
-| 5    | Research associated technologies, <br />Develop of API Routes Scanner, Dependencies Scanner |
-| 6    | Develop of a small but functional **POC** for the visualization process.                    |
-| 7*   | Code Refining and Improving in functionalities                                              |
-| 8*   | **POC** Deployment for Peer Review                                                              |
-
-
-
-## Authors
-
-Group members:
-
--   Giovanni Menon (_**Menny** in some commit_)
--   Raphael Toubol
--   Nyandoro Christopher
-      
